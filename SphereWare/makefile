@@ -11,7 +11,7 @@
 
 MCU          = atmega32u4
 ARCH         = AVR8
-BOARD        = USBKEY
+BOARD        = NONE
 F_CPU        = 16000000
 F_USB        = $(F_CPU)
 OPTIMIZATION = s
