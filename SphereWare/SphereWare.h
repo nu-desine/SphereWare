@@ -46,6 +46,12 @@
 
         #include "Descriptors.h"
         #include "Config/AppConfig.h"
+
+        #include "ADC.h"
+        #include "BootJump.h"
+        #include "DigPot.h"
+        #include "LED.h"
+        #include "MUX.h"
         
         #include <LUFA/Drivers/USB/USB.h>
 
