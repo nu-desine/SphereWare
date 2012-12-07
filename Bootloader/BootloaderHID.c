@@ -75,8 +75,47 @@ int main(void)
     /* Enable global interrupts so that the USB stack can function */
     sei();
 
-    while (RunBootloader)
-      USB_USBTask();
+    if (!bit_is_set(PINE, PE2))
+    {
+        while (RunBootloader)
+        {
+
+            // turn LED red
+            int led_channels[NUM_OF_LEDS][3];
+
+            for (int i = 0; i < NUM_OF_LEDS; ++i)
+            {
+                led_channels[i][0] = 1023;
+                led_channels[i][1] = 0;
+                led_channels[i][2] = 0;
+            }
+            LED_WriteArray(led_channels);
+
+            //wait for 500ms
+            for (int i = 0; i < 500; ++i)
+            {
+                _delay_ms(1);
+                USB_USBTask();
+            }
+
+            // turn LED off
+            for (int i = 0; i < NUM_OF_LEDS; ++i)
+            {
+                led_channels[i][0] = 0;
+                led_channels[i][1] = 0;
+                led_channels[i][2] = 0;
+            }
+            LED_WriteArray(led_channels);
+
+            //wait for 500ms
+            for (int i = 0; i < 500; ++i)
+            {
+                _delay_ms(1);
+                USB_USBTask();
+            }
+
+        }
+    }
 
     /* Disconnect from the host - USB interface will be reset later along with the AVR */
     USB_Detach();
@@ -101,8 +140,24 @@ static void SetupHardware(void)
     MCUCR = (1 << IVCE);
     MCUCR = (1 << IVSEL);
 
+
     /* Initialize USB subsystem */
     USB_Init();
+    LED_Init();
+
+    // turn LED red
+    int led_channels[NUM_OF_LEDS][3];
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 1023;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 0;
+    }
+    LED_WriteArray(led_channels);
+
+    //PE2 button as input pulled high
+    DDRE |= (1 << PE2);
+    PORTE |= (1 << PE2);
 }
 
 /** Event handler for the USB_ConfigurationChanged event. This configures the device's endpoints ready

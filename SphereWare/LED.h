@@ -13,25 +13,25 @@
 #define ENAREG DDRC
 #define LATREG DDRE
 #define DATREG DDRF
-#define CLKPIN  7 
-#define ENAPIN 	6 
-#define LATPIN 	6 
-#define DATPIN 	7 
+#define CLKPIN 7 
+#define ENAPIN 6 
+#define LATPIN 6 
+#define DATPIN 7 
 
 // Variables for communication
-unsigned long LED_CommandPacket;
+unsigned long led_command_packet;
 int LED_CommandMode;
 int LED_BlueCommand;
 int LED_RedCommand;
 int LED_GreenCommand;
 
 // Define number of ShiftBrite modules
-#define NumLEDs 1
+#define NUM_OF_LEDS 1
 
 void LED_Init(void);
 void LED_SendPacket(void);
 void LED_Latch(void);
-void WriteLEDArray(int LEDChannels[NumLEDs][3]);
+void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]);
 
 // Example loop to cycle all LEDs through primary colors
 void LED_TestLoop(void);

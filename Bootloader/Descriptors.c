@@ -73,8 +73,8 @@ const USB_Descriptor_Device_t DeviceDescriptor =
 
     .Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
-    .VendorID               = 0x03EB,
-    .ProductID              = 0x2067,
+	.VendorID               = 0x1d50,
+	.ProductID              = 0x6041,
     .ReleaseNumber          = VERSION_BCD(00.01),
 
     .ManufacturerStrIndex   = NO_DESCRIPTOR,

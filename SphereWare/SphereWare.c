@@ -67,6 +67,10 @@ int main(void)
 
     for (;;)
     {
+
+        if (!bit_is_set(PINE, PE2))
+            BootJump_Jump_To_Bootloader();
+
         HID_Task();
         USB_USBTask();
     }
@@ -84,6 +88,22 @@ void SetupHardware(void)
 
     /* Hardware Initialization */
     USB_Init();
+    LED_Init();
+
+    // turn LED blue
+    int led_channels[NUM_OF_LEDS][3];
+
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 0;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 1023;
+    }
+    LED_WriteArray(led_channels);
+
+    //PE2 button as input pulled high
+    DDRE |= (1 << PE2);
+    PORTE |= (1 << PE2);
 }
 
 /** Event handler for the USB_Connect event. Starts the library USB task to begin the 

@@ -55,7 +55,7 @@ ERROR_IF_EMPTY   ?= $(if $(strip $($(strip $(1)))), , $(error Makefile $(strip $
 ERROR_IF_NONBOOL ?= $(if $(filter Y N, $($(strip $(1)))), , $(error Makefile $(strip $(1)) option must be Y or N))
 
 # Default values of optionally user-supplied variables
-AVRDUDE_PROGRAMMER ?= jtagicemkii
+AVRDUDE_PROGRAMMER ?= avrisp2
 AVRDUDE_PORT       ?= usb
 AVRDUDE_FLAGS      ?= 
 

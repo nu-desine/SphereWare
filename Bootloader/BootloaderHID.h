@@ -46,6 +46,8 @@
 
         #include "Descriptors.h"
 
+        #include "LED.h"
+
         #include <LUFA/Drivers/USB/USB.h>
 
     /* Macros: */
