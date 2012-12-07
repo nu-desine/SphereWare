@@ -45,6 +45,7 @@
  */
 const USB_Descriptor_HIDReport_Datatype_t PROGMEM GenericReport[] =
 {
+
     HID_RI_USAGE_PAGE(16, 0xFF00), /* Vendor Page 0 */
     HID_RI_USAGE(8, 0x01), /* Vendor Usage 1 */
     HID_RI_COLLECTION(8, 0x01), /* Vendor Usage 1 */
@@ -73,14 +74,15 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
     .Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
 
     .USBSpecification       = VERSION_BCD(01.10),
-    .Class                  = USB_CSCP_NoDeviceClass,
-    .SubClass               = USB_CSCP_NoDeviceSubclass,
-    .Protocol               = USB_CSCP_NoDeviceProtocol,
+
+    .Class                  = USB_CSCP_IADDeviceClass,
+    .SubClass               = USB_CSCP_IADDeviceSubclass,
+    .Protocol               = USB_CSCP_IADDeviceProtocol,
 
     .Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
-    .VendorID               = 0x03EB,
-    .ProductID              = 0x204F,
+    .VendorID               = 0x1d50,
+    .ProductID              = 0x6021,
     .ReleaseNumber          = VERSION_BCD(00.01),
 
     .ManufacturerStrIndex   = 0x01,
@@ -102,7 +104,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
             .Header                 = {.Size = sizeof(USB_Descriptor_Configuration_Header_t), .Type = DTYPE_Configuration},
 
             .TotalConfigurationSize = sizeof(USB_Descriptor_Configuration_t),
-            .TotalInterfaces        = 1,
+            .TotalInterfaces        = 3,
 
             .ConfigurationNumber    = 1,
             .ConfigurationStrIndex  = NO_DESCRIPTOR,
@@ -112,11 +114,187 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
             .MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
         },
 
+    .Audio_IAD =
+    {
+        .Header = {.Size = sizeof(USB_Descriptor_Interface_Association_t), .Type = DTYPE_InterfaceAssociation},
+
+        .FirstInterfaceIndex = 0,
+        .TotalInterfaces = 2,
+
+        .Class = AUDIO_CSCP_AudioClass,
+        .SubClass = AUDIO_CSCP_ControlSubclass,
+        .Protocol = AUDIO_CSCP_ControlProtocol,
+
+        .IADStrIndex = NO_DESCRIPTOR
+    },
+    .Audio_ControlInterface =
+    {
+        .Header                   = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface},
+
+        .InterfaceNumber          = 0,
+        .AlternateSetting         = 0,
+
+        .TotalEndpoints           = 0,
+
+        .Class                    = AUDIO_CSCP_AudioClass,
+        .SubClass                 = AUDIO_CSCP_ControlSubclass,
+        .Protocol                 = AUDIO_CSCP_ControlProtocol,
+
+        .InterfaceStrIndex        = NO_DESCRIPTOR
+    },
+
+    .Audio_ControlInterface_SPC =
+    {
+        .Header                   = {.Size = sizeof(USB_Audio_Descriptor_Interface_AC_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_Header,
+
+        .ACSpecification          = VERSION_BCD(01.00),
+        .TotalLength              = sizeof(USB_Audio_Descriptor_Interface_AC_t),
+
+        .InCollection             = 1,
+        .InterfaceNumber          = 1,
+    },
+
+    .Audio_StreamInterface =
+    {
+        .Header                   = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface},
+
+        .InterfaceNumber          = 1,
+        .AlternateSetting         = 0,
+
+        .TotalEndpoints           = 2,
+
+        .Class                    = AUDIO_CSCP_AudioClass,
+        .SubClass                 = AUDIO_CSCP_MIDIStreamingSubclass,
+        .Protocol                 = AUDIO_CSCP_StreamingProtocol,
+
+        .InterfaceStrIndex        = NO_DESCRIPTOR
+    },
+
+    .Audio_StreamInterface_SPC =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_AudioInterface_AS_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_General,
+
+        .AudioSpecification       = VERSION_BCD(01.00),
+
+        .TotalLength              =  offsetof(USB_Descriptor_Configuration_t, HID_Interface)
+        - offsetof(USB_Descriptor_Configuration_t, Audio_StreamInterface_SPC)  
+
+    },
+
+    .MIDI_In_Jack_Emb =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_InputJack_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_InputTerminal,
+
+        .JackType                 = MIDI_JACKTYPE_Embedded,
+        .JackID                   = 0x01,
+
+        .JackStrIndex             = NO_DESCRIPTOR
+    },
+
+    .MIDI_In_Jack_Ext =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_InputJack_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_InputTerminal,
+
+        .JackType                 = MIDI_JACKTYPE_External,
+        .JackID                   = 0x02,
+
+        .JackStrIndex             = NO_DESCRIPTOR
+    },
+
+    .MIDI_Out_Jack_Emb =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_OutputJack_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_OutputTerminal,
+
+        .JackType                 = MIDI_JACKTYPE_Embedded,
+        .JackID                   = 0x03,
+
+        .NumberOfPins             = 1,
+        .SourceJackID             = {0x02},
+        .SourcePinID              = {0x01},
+
+        .JackStrIndex             = NO_DESCRIPTOR
+    },
+
+    .MIDI_Out_Jack_Ext =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_OutputJack_t), .Type = DTYPE_CSInterface},
+        .Subtype                  = AUDIO_DSUBTYPE_CSInterface_OutputTerminal,
+
+        .JackType                 = MIDI_JACKTYPE_External,
+        .JackID                   = 0x04,
+
+        .NumberOfPins             = 1,
+        .SourceJackID             = {0x01},
+        .SourcePinID              = {0x01},
+
+        .JackStrIndex             = NO_DESCRIPTOR
+    },
+
+    .MIDI_In_Jack_Endpoint =
+    {
+        .Endpoint =
+        {
+            .Header              = {.Size = sizeof(USB_Audio_Descriptor_StreamEndpoint_Std_t), .Type = DTYPE_Endpoint},
+
+            .EndpointAddress     = (ENDPOINT_DIR_OUT | MIDI_STREAM_OUT_EPADDR),
+            .Attributes          = (EP_TYPE_BULK | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
+            .EndpointSize        = MIDI_STREAM_EPSIZE,
+            .PollingIntervalMS   = 0x01
+        },
+
+        .Refresh                  = 0,
+        .SyncEndpointNumber       = 0
+    },
+
+    .MIDI_In_Jack_Endpoint_SPC =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_Jack_Endpoint_t), .Type = DTYPE_CSEndpoint},
+        .Subtype                  = AUDIO_DSUBTYPE_CSEndpoint_General,
+
+        .TotalEmbeddedJacks       = 0x01,
+        .AssociatedJackID         = {0x01}
+    },
+
+    .MIDI_Out_Jack_Endpoint =
+    {
+        .Endpoint =
+        {
+            .Header              = {.Size = sizeof(USB_Audio_Descriptor_StreamEndpoint_Std_t), .Type = DTYPE_Endpoint},
+
+            .EndpointAddress     = (ENDPOINT_DIR_IN | MIDI_STREAM_IN_EPADDR),
+            .Attributes          = (EP_TYPE_BULK | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
+            .EndpointSize        = MIDI_STREAM_EPSIZE,
+            .PollingIntervalMS   = 0x01
+        },
+
+        .Refresh                  = 0,
+        .SyncEndpointNumber       = 0
+    },
+
+    .MIDI_Out_Jack_Endpoint_SPC =
+    {
+        .Header                   = {.Size = sizeof(USB_MIDI_Descriptor_Jack_Endpoint_t), .Type = DTYPE_CSEndpoint},
+        .Subtype                  = AUDIO_DSUBTYPE_CSEndpoint_General,
+
+        .TotalEmbeddedJacks       = 0x01,
+        .AssociatedJackID         = {0x03}
+    },
+
+
+
+
+
+
     .HID_Interface =
         {
             .Header                 = {.Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface},
 
-            .InterfaceNumber        = 0x00,
+            .InterfaceNumber        = 0x02,
             .AlternateSetting       = 0x00,
 
             .TotalEndpoints         = 2,
@@ -146,7 +324,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
             .EndpointAddress        = GENERIC_IN_EPADDR,
             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
             .EndpointSize           = GENERIC_EPSIZE,
-            .PollingIntervalMS      = 0x05
+            .PollingIntervalMS      = 0x01
         },
 
     .HID_ReportOUTEndpoint =
@@ -156,7 +334,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
             .EndpointAddress        = GENERIC_OUT_EPADDR,
             .Attributes             = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
             .EndpointSize           = GENERIC_EPSIZE,
-            .PollingIntervalMS      = 0x05
+            .PollingIntervalMS      = 0x01
         }
 };
 
@@ -177,9 +355,9 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(11), .Type = DTYPE_String},
+    .Header                 = {.Size = USB_STRING_LEN(9), .Type = DTYPE_String},
 
-    .UnicodeString          = L"Dean Camera"
+    .UnicodeString          = L"nu desine"
 };
 
 /** Product descriptor string. This is a Unicode string containing the product's details in human readable form,
@@ -188,9 +366,9 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  */
 const USB_Descriptor_String_t PROGMEM ProductString =
 {
-    .Header                 = {.Size = USB_STRING_LEN(21), .Type = DTYPE_String},
+    .Header                 = {.Size = USB_STRING_LEN(11), .Type = DTYPE_String},
 
-    .UnicodeString          = L"LUFA Generic HID Demo"
+    .UnicodeString          = L"AlphaSphere"
 };
 
 /** This function is called by the library when in device mode, and must be overridden (see library "USB Descriptors"

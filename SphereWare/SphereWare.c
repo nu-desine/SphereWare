@@ -34,7 +34,7 @@
  *  is responsible for the initial application hardware configuration.
  */
 
-#include "GenericHID.h"
+#include "SphereWare.h"
 
 
 /** Main program entry point. This routine configures the hardware required by the application, then
@@ -92,6 +92,10 @@ void EVENT_USB_Device_ConfigurationChanged(void)
     /* Setup HID Report Endpoints */
     ConfigSuccess &= Endpoint_ConfigureEndpoint(GENERIC_IN_EPADDR, EP_TYPE_INTERRUPT, GENERIC_EPSIZE, 1);
     ConfigSuccess &= Endpoint_ConfigureEndpoint(GENERIC_OUT_EPADDR, EP_TYPE_INTERRUPT, GENERIC_EPSIZE, 1);
+
+	/* Setup MIDI Data Endpoints */
+	ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_IN_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
+	ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_OUT_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
 
     /* Indicate endpoint configuration success or failure */
 }
