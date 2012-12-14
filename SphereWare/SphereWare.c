@@ -89,6 +89,7 @@ void SetupHardware(void)
     /* Hardware Initialization */
     USB_Init();
     LED_Init();
+    MIDI_Init();
 
     // turn LED blue
     int led_channels[NUM_OF_LEDS][3];
@@ -191,7 +192,13 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
         function is called each time the host has sent a new report. DataArray is an array
         holding the report sent from the host.
     */
-
+    
+    // Received a MIDI message report
+    if (DataArray[0] == 0x06) 
+    {
+        MIDI_Send_Usb_Midi (DataArray);
+        MIDI_Send_Uart_Midi (DataArray);
+    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
