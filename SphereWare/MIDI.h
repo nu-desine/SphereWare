@@ -22,6 +22,7 @@
 
 #include <avr/io.h>
 #include <LUFA/Drivers/USB/USB.h>
+#include "Descriptors.h"
 
 #define USART_BAUDRATE 31250 
 #define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
