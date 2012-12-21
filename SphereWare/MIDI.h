@@ -27,9 +27,25 @@
 #define USART_BAUDRATE 31250 
 #define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
 
+//==============================================================================
+/** MIDI initialisation function.
+ 
+ Sets up the microcontroller for sending UART MIDI data.
+ */
 void MIDI_Init(void);
 
+//==============================================================================
+/** Creates and sends a UART MIDI message.
+ 
+ @param DataArray        the array of data that needs to be sent as a UART MIDI message
+ */
 void MIDI_Send_Uart_Midi (uint8_t* DataArray);
+
+//==============================================================================
+/** Creates and sends a USB MIDI message.
+ 
+ @param DataArray        the array of data that needs to be sent as a USB MIDI message
+ */
 void MIDI_Send_Usb_Midi (uint8_t* DataArray);
 
 void MIDI_Uart_Put (char s);
