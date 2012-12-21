@@ -52,6 +52,7 @@
         #include "DigPot.h"
         #include "LED.h"
         #include "MUX.h"
+        #include "HidInReports.h"
         
         #include <LUFA/Drivers/USB/USB.h>
 

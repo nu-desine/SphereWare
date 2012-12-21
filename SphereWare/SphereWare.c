@@ -234,23 +234,5 @@ void HID_Task(void)
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearOUT();
     }
-
-    Endpoint_SelectEndpoint(GENERIC_IN_EPADDR);
-
-    /* Check to see if the host is ready to accept another packet */
-    if (Endpoint_IsINReady())
-    {
-        /* Create a temporary buffer to hold the report to send to the host */
-        uint8_t GenericData[GENERIC_REPORT_SIZE];
-
-        /* Create Generic Report Data */
-        CreateGenericHIDReport(GenericData);
-
-        /* Write Generic Report Data */
-        Endpoint_Write_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-
-        /* Finalize the stream transfer to send the last packet */
-        Endpoint_ClearIN();
-    }
 }
 
