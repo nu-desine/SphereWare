@@ -20,13 +20,24 @@
 
 void HidInReports_Send_Report (uint8_t* report_data)
 {
+    /* Device must be connected and configured for the task to run */
+	if (USB_DeviceState != DEVICE_STATE_Configured)
+        return;
+    
     Endpoint_SelectEndpoint(GENERIC_IN_EPADDR);
     
     /* Check to see if the host is ready to accept another packet */
     if (Endpoint_IsINReady())
     {
-        /* Write Generic Report Data */
-        Endpoint_Write_Stream_LE(&report_data, sizeof(report_data), NULL);
+        uint8_t data[GENERIC_REPORT_SIZE];
+        
+        for (int i = 0; i < GENERIC_REPORT_SIZE; i++)
+        {
+            data[i] = report_data[i];
+        }
+        
+        /* Write Report Data */
+        Endpoint_Write_Stream_LE(&data, sizeof(data), NULL);
         
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearIN();
