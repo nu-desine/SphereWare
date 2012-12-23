@@ -16,7 +16,11 @@ F_CPU        = 16000000
 F_USB        = $(F_CPU)
 OPTIMIZATION = s
 TARGET       = SphereWare
+<<<<<<< HEAD
 SRC          = $(TARGET).c Descriptors.c ADC.c BootJump.c DigPot.c LED.c MUX.c MIDI.c $(LUFA_SRC_USB)
+=======
+SRC          = $(TARGET).c Descriptors.c ADC.c BootJump.c DigPot.c LED.c MUX.c HidInReports.c $(LUFA_SRC_USB)
+>>>>>>> feat_HID_IN_reports
 LUFA_PATH    = ../LUFA
 CC_FLAGS     = -DUSE_LUFA_CONFIG_HEADER -IConfig/
 LD_FLAGS     =
