@@ -24,12 +24,12 @@
 void ADC_Init(void)
 {
     // Select AVcc as the voltage reference
-    //ADMUX |= (1 << REFS0);
+    ADMUX |= (1 << REFS0);
 
     // Select internal 2.56V reference
-    ADMUX |= (1 << REFS1) | (1 << REFS0);
+    //ADMUX |= (1 << REFS1) | (1 << REFS0);
 
-    ADC_Set(SINGLE_ENDED, ADC4);
+    //ADC_Set(SINGLE_ENDED, ADC4);
 
     //// ADC4 - ADC0 X 200 -- 111000
     //ADMUX |= 0b11000;
@@ -66,7 +66,7 @@ void ADC_Set(ADC_Mode mode, ADC_Channel chan)
 //      ADMUX  &= 0b11111100;
 //      ADMUX  |= chan & 0b11;
 //  }
-    _delay_ms(5);
+    //_delay_ms(5);
     //or don't set anything
 }
 

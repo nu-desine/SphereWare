@@ -55,6 +55,12 @@
 
 #include "SphereWare.h"
 
+#define FIRST_PAD 0  
+#define LAST_PAD 47 
+
+int16_t init_val[LAST_PAD+1];
+int16_t prev_val[LAST_PAD+1] = {0};
+
 
 /** Main program entry point. This routine configures the hardware required by the application, then
  *  enters a loop to run the application tasks in sequence.
@@ -65,14 +71,101 @@ int main(void)
 
     sei();
 
-    for (;;)
+
+    for (int i = 0; i < 100; ++i)
     {
+        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+        {
 
-        if (!bit_is_set(PINE, PE2))
-            BootJump_Jump_To_Bootloader();
+            MUX_Select(pad);
+            _delay_us(100);
+            init_val[pad] = ADC_Read(SINGLE_ENDED, (pad >> 3) % 2);
 
-        HID_Task();
-        USB_USBTask();
+            HID_Task();
+            USB_USBTask();
+        }
+    }
+
+    while (1) 
+    {
+        uint16_t led_sum = 0;
+        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+        {
+
+            if (!bit_is_set(PINE, PE2))
+            {
+                for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+                {
+
+                    MUX_Select(pad);
+                    init_val[pad] = ADC_Read(SINGLE_ENDED, (pad >> 3) % 2);
+                    HidInReports_Create_Pad_Report(pad, 0, 100);
+                    prev_val[pad] = 0;
+
+                    HID_Task();
+                    USB_USBTask();
+                }
+            break;
+            }
+
+
+            int16_t val = init_val[pad] - ADC_Read(SINGLE_ENDED, (pad >> 3) % 2) - 20;
+
+            if (pad == LAST_PAD)
+                MUX_Select(FIRST_PAD);
+            else 
+                MUX_Select(pad + 1);
+
+            
+            val = val + prev_val[pad] >> 1;
+
+            if (val < 0)
+                val = 0;
+            else if (val > 127)
+                val = 127;
+
+
+            if (val != prev_val[pad])
+            {
+                HidInReports_Create_Pad_Report(pad, val, 100);
+                prev_val[pad] = val;
+            }
+            led_sum += val;
+
+            HID_Task();
+            USB_USBTask();
+
+            _delay_us(100);
+        }
+
+        int led_channels[NUM_OF_LEDS][3];
+
+        led_sum *= 8; 
+
+        if (led_sum < 1024)
+        {
+            for (int i = 0; i < NUM_OF_LEDS; ++i)
+            {
+                led_channels[i][0] = 0;
+                led_channels[i][1] = led_sum;
+                led_channels[i][2] = 1023 - led_sum;
+            }
+        }
+        else
+        {
+            if (led_sum > 2046)
+                led_sum = 2046;
+
+            led_sum -= 1023;
+
+            for (int i = 0; i < NUM_OF_LEDS; ++i)
+            {
+                led_channels[i][0] = led_sum;
+                led_channels[i][1] = 1023 - led_sum;
+                led_channels[i][2] = 0;
+            }
+        }
+        LED_WriteArray(led_channels);
     }
 }
 
@@ -89,6 +182,8 @@ void SetupHardware(void)
     /* Hardware Initialization */
     USB_Init();
     LED_Init();
+    ADC_Init();
+    DigPot_Init();
     MIDI_Init();
 
     // turn LED blue
@@ -105,6 +200,8 @@ void SetupHardware(void)
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
     PORTE |= (1 << PE2);
+
+    MUX_Init();
 }
 
 /** Event handler for the USB_Connect event. Starts the library USB task to begin the 
@@ -133,9 +230,9 @@ void EVENT_USB_Device_ConfigurationChanged(void)
     ConfigSuccess &= Endpoint_ConfigureEndpoint(GENERIC_IN_EPADDR, EP_TYPE_INTERRUPT, GENERIC_EPSIZE, 1);
     ConfigSuccess &= Endpoint_ConfigureEndpoint(GENERIC_OUT_EPADDR, EP_TYPE_INTERRUPT, GENERIC_EPSIZE, 1);
 
-	/* Setup MIDI Data Endpoints */
-	ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_IN_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
-	ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_OUT_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
+    /* Setup MIDI Data Endpoints */
+    ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_IN_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
+    ConfigSuccess &= Endpoint_ConfigureEndpoint(MIDI_STREAM_OUT_EPADDR, EP_TYPE_BULK, MIDI_STREAM_EPSIZE, 1);
 
     /* Indicate endpoint configuration success or failure */
 }

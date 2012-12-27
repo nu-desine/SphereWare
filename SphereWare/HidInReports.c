@@ -21,7 +21,7 @@
 void HidInReports_Send_Report (uint8_t* report_data)
 {
     /* Device must be connected and configured for the task to run */
-	if (USB_DeviceState != DEVICE_STATE_Configured)
+    if (USB_DeviceState != DEVICE_STATE_Configured)
         return;
     
     Endpoint_SelectEndpoint(GENERIC_IN_EPADDR);
