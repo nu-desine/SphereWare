@@ -192,6 +192,11 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
         holding the report sent from the host.
     */
 
+    // Received a host setup data request report
+    if (DataArray[0] == 0x05) 
+    {
+        HidInReports_Create_Host_Setup_Report (1, 0);
+    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.

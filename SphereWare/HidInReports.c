@@ -82,3 +82,15 @@ void HidInReports_Create_Dial_Report (uint8_t dial_number,
     
     HidInReports_Send_Report (report_data);
 }
+
+void HidInReports_Create_Host_Setup_Report (uint8_t firmware_version, 
+                                            uint8_t device_type)
+{
+    uint8_t report_data[GENERIC_REPORT_SIZE];
+    
+    report_data[0] = 0x04; //host setup data command ID
+    report_data[1] = firmware_version;
+    report_data[2] = device_type;
+    
+    HidInReports_Send_Report (report_data);
+}
