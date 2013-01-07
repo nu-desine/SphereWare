@@ -19,15 +19,18 @@
 
 #include "ADC.h"
 
+uint8_t prev_chan;
+uint8_t prev_mode;
+
 /**  Initialise the ADC
   */
 void ADC_Init(void)
 {
     // Select AVcc as the voltage reference
-    ADMUX |= (1 << REFS0);
+    //ADMUX |= (1 << REFS0);
 
     // Select internal 2.56V reference
-    //ADMUX |= (1 << REFS1) | (1 << REFS0);
+    ADMUX |= (1 << REFS1) | (1 << REFS0);
 
     //ADC_Set(SINGLE_ENDED, ADC4);
 
@@ -44,29 +47,36 @@ void ADC_Init(void)
     //Enable the ADC and set the ADC clock prescale to 128, 16Mhz/128 = 125kHz
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
 
+    prev_chan = 1;
+    prev_mode = 1;
+    ADC_Set(0, 0);
 }
 
 /** Set the correct mode and channel on the ADC MUX[5..0]
     */
 void ADC_Set(ADC_Mode mode, ADC_Channel chan)
 {
-//  if (mode != PREVIOUS_MODE) 
-//  {
-//      if (chan == ADC_PREV)
-//          chan = ADMUX & 0b11;
-//
-        //set the correct MUX[5..0] for this mode and channel
-        ADMUX  &= 0b11100000;
-        ADCSRB &= 0b11011111;
-        ADMUX  |= (mode | chan) & 0b011111;
-        ADCSRB |= mode & 0b100000;
-//  }
-//  else if (chan != ADC_PREV)//just set the channel
-//  {
-//      ADMUX  &= 0b11111100;
-//      ADMUX  |= chan & 0b11;
-//  }
-    //_delay_ms(5);
+  if (mode != prev_mode) 
+  {
+      if (chan == ADC_PREV)
+          chan = ADMUX & 0b11;
+
+      //set the correct MUX[5..0] for this mode and channel
+      ADMUX  &= 0b11100000;
+      ADCSRB &= 0b11011111;
+      ADMUX  |= (mode | chan) & 0b011111;
+      ADCSRB |= mode & 0b100000;
+      prev_chan = chan;
+      prev_mode = mode;
+  }
+  else if (chan != prev_chan) //just set the channel
+  {
+      ADMUX  &= 0b11111100;
+      ADMUX  |= chan & 0b11;
+      prev_chan = chan;
+  }
+
+  _delay_us(500);
     //or don't set anything
 }
 
