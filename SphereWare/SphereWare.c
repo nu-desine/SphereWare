@@ -61,6 +61,11 @@
 int16_t init_val[LAST_PAD+1];
 int16_t prev_val[LAST_PAD+1] = {0};
 uint8_t digpot_val[LAST_PAD+1];
+int16_t prev_hit[LAST_PAD+1] = {0};
+bool sent[LAST_PAD+1] = {false};
+
+//#define NUM_OF_DUDS 6
+//uint8_t dud_pads[NUM_OF_DUDS] = {32, 33, 34, 39, 40, 41};
 
 
 /** Main program entry point. This routine configures the hardware required by the application, then
@@ -71,6 +76,7 @@ int main(void)
     SetupHardware();
 
     sei();
+    _delay_ms(500);
 
 	for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
 	{
@@ -80,15 +86,16 @@ int main(void)
 
 		MUX_Select(pad);
 		DigPot_Write(0, 0x001);
+        _delay_ms(1);
 
-        val = ADC_Read(DIFF_0_X200, adc_number);
+        val = ADC_Read(DIFF_0_X40, adc_number);
 
-		while (val > 400)
+		while (val > 300)
 		{
 		    DigPot_Increment(0);
             _delay_ms(1);
 		    USB_USBTask();
-		    val = ADC_Read(DIFF_0_X200, adc_number);
+		    val = ADC_Read(DIFF_0_X40, adc_number);
 		}
         digpot_val[pad] = DigPot_Read(0);
 	}
@@ -105,33 +112,48 @@ int main(void)
 
         for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
         {
+
+            //bool dud = false;
+            //for(int i = 0; i < NUM_OF_DUDS; ++i)
+            //{
+            //    if (dud_pads[i] == pad)
+            //        dud = true;
+            //}
+            //if (dud)
+            //    continue;
+
             int16_t val = 0;
-            int16_t send_val = 0;
+            int16_t hit = 0;
 			//even rows are on ADC4 (= 0) and odd rows are on ADC5 (= 1)
             uint8_t adc_number = (pad >> 3) % 2;
 
             if (!bit_is_set(PINE, PE2))
                 BootJump_Jump_To_Bootloader();
 
-            val = ADC_Read(DIFF_0_X200, adc_number);
-            //if (val < 0)
+            hit = ADC_Read(DIFF_0_X40, adc_number);
+            if (hit < 200)
             {
-                if (val < -509)
+                if (!sent[pad])
                 {
-                    val = ADC_Read(DIFF_0_X40, adc_number);
-                    if (val < -509)
-                    {
-                        val =  ADC_Read(DIFF_0_X10, adc_number);
-                    }
-                    else
-                        send_val = -(511 - val + 85 + 332);//511 - val + 85 + 1022;
-                    //if (val < -509)
-                    //    val =  ADC_Read(SINGLE_ENDED, adc_number);
+                    val = hit - ADC_Read(DIFF_0_X200, adc_number);
+                    int16_t velo = (1022 - (511 - val)) >> 1;
+                    //if (val <= 0)
+                    //    val = -1;
+                    if (velo > 127)
+                        velo = 127;
+                    HidInReports_Create_Pad_Report(pad, val, velo);
+                    sent[pad] = true;
                 }
-                else
-                    send_val = 511 - val;
             }
-            HidInReports_Create_Pad_Report(pad, send_val, 100);
+            else
+            {
+                if (sent[pad])
+                {
+                    HidInReports_Create_Pad_Report(pad, 0, 0);
+                    sent[pad] = false;
+                }
+            }
+
             //if (hit < -500)
             //{
             //    val = ADC_Read(DIFF_0_X40, adc_number);
@@ -168,7 +190,7 @@ int main(void)
             HID_Task();
             USB_USBTask();
 
-            //_delay_us(500);
+            _delay_ms(1);
         }
 
         int led_channels[NUM_OF_LEDS][3];
@@ -214,21 +236,21 @@ void SetupHardware(void)
 
     /* Hardware Initialization */
     USB_Init();
-    //LED_Init();
+    LED_Init();
     ADC_Init();
     DigPot_Init();
     MIDI_Init();
 
     // turn LED blue
-    //int led_channels[NUM_OF_LEDS][3];
+    int led_channels[NUM_OF_LEDS][3];
 
-    //for (int i = 0; i < NUM_OF_LEDS; ++i)
-    //{
-    //    led_channels[i][0] = 0;
-    //    led_channels[i][1] = 0;
-    //    led_channels[i][2] = 1023;
-    //}
-    //LED_WriteArray(led_channels);
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 0;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 1023;
+    }
+    LED_WriteArray(led_channels);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
