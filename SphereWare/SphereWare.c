@@ -124,6 +124,7 @@ int main(void)
 
             int16_t val = 0;
             int16_t hit = 0;
+            int16_t velo = 0;
 			//even rows are on ADC4 (= 0) and odd rows are on ADC5 (= 1)
             uint8_t adc_number = (pad >> 3) % 2;
 
@@ -131,19 +132,27 @@ int main(void)
                 BootJump_Jump_To_Bootloader();
 
             hit = ADC_Read(DIFF_0_X40, adc_number);
-            if (hit < 200)
+            if (hit < 150)
             {
                 if (!sent[pad])
                 {
-                    val = hit - ADC_Read(DIFF_0_X200, adc_number);
-                    int16_t velo = (1022 - (511 - val)) >> 1;
+                    velo = (511 - hit) >> 3;
                     //if (val <= 0)
                     //    val = -1;
-                    if (velo > 127)
-                        velo = 127;
-                    HidInReports_Create_Pad_Report(pad, val, velo);
                     sent[pad] = true;
                 }
+                else
+                    velo = 0;
+
+                val = ADC_Read(DIFF_0_X40, adc_number);
+                val = 150 - val;
+                if (val >= 0)
+                {
+                    HidInReports_Create_Pad_Report(pad, val, velo);
+                    led_sum += val;
+                }
+
+
             }
             else
             {
@@ -154,48 +163,19 @@ int main(void)
                 }
             }
 
-            //if (hit < -500)
-            //{
-            //    val = ADC_Read(DIFF_0_X40, adc_number);
-            //}
-
-
             if (pad < LAST_PAD)
             {
                 MUX_Select(pad + 1);
                 DigPot_Write(0, digpot_val[pad + 1]);
             }
 
-            //val = val + prev_val[pad] >> 1;
-
-            //if (val < 0)
-            //    val = 0;
-            //else if (val > 127)
-            //    val = 127;
-
-
-            //if (val != prev_val[pad])
-            //{
-
-
-            //if (val != prev_val[pad])
-            //{
-            //    HidInReports_Create_Pad_Report(pad, val, 100);
-            //    prev_val[pad] = val;
-            //}
-            //    prev_val[pad] = val;
-            //}
-            //led_sum += val;
-
             HID_Task();
             USB_USBTask();
 
-            _delay_ms(1);
+            _delay_us(100);
         }
 
         int led_channels[NUM_OF_LEDS][3];
-
-        led_sum *= 8; 
 
         if (led_sum < 1024)
         {

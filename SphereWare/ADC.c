@@ -68,15 +68,16 @@ void ADC_Set(ADC_Mode mode, ADC_Channel chan)
       ADCSRB |= mode & 0b100000;
       prev_chan = chan;
       prev_mode = mode;
+      _delay_us(500);
   }
   else if (chan != prev_chan) //just set the channel
   {
       ADMUX  &= 0b11111100;
       ADMUX  |= chan & 0b11;
       prev_chan = chan;
+      _delay_ms(500);
   }
 
-  _delay_us(500);
     //or don't set anything
 }
 
