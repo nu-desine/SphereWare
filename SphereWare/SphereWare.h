@@ -49,7 +49,7 @@
 
         #include "ADC.h"
         #include "BootJump.h"
-        #include "DigPot.h"
+        #include "DAC.h"
         #include "LED.h"
         #include "MUX.h"
         #include "MIDI.h"

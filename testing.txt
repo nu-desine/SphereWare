@@ -1,0 +1,10 @@
+1. Initialise hardware
+2. Turn LED blue
+3. Wait for button press
+4. Check Sensors are about 3v, send HID reports
+5. Turn LED red if a sensor fails else turn green 
+6. Wait for button press
+7. Set DAC to 0, turn off LED
+8. Wait for button press
+9. Turn LED white, Ramp DAC to 3.3V
+10. GOTO 7

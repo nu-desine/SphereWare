@@ -64,6 +64,10 @@ uint8_t digpot_val[LAST_PAD+1];
 int16_t prev_hit[LAST_PAD+1] = {0};
 bool sent[LAST_PAD+1] = {false};
 
+#define NUM_OF_PUTS 2
+//uint8_t pads_under_test[NUM_OF_PUTS] = {0, 8, 16, 24, 32, 40};
+uint8_t pads_under_test[NUM_OF_PUTS] = {0, 1};//, 2, 3, 4, 5};
+
 //#define NUM_OF_DUDS 6
 //uint8_t dud_pads[NUM_OF_DUDS] = {32, 33, 34, 39, 40, 41};
 
@@ -73,147 +77,143 @@ bool sent[LAST_PAD+1] = {false};
  */
 int main(void)
 {
+    bool sensors_ok = true;
+    int led_channels[3];
+
     SetupHardware();
 
     sei();
+    // turn LED blue
 
-calibrate:
-    DigPot_Write(0, 0x001);
-    _delay_ms(500);
-	for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-	{
-		int16_t val;
-		//even rows are on adc4 (==0) and odd rows are on adc5 (==1)
-		uint8_t adc_number = (pad >> 3) % 2;
-        HidInReports_Create_Pad_Report(pad, 0, 0);
+    led_channels[0] = 0;
+    led_channels[1] = 0;
+    led_channels[2] = 1023;
 
-		MUX_Select(pad);
-		DigPot_Write(0, 0x001);
-        _delay_ms(1);
+    LED_WriteArray(led_channels);
 
-        val = ADC_Read(DIFF_0_X200, adc_number);
-
-		while (val > 400)
-		{
-		    DigPot_Increment(0);
-            _delay_us(10);
-		    USB_USBTask();
-            HID_Task();
-		    val = ADC_Read(DIFF_0_X200, adc_number);
-		}
-        digpot_val[pad] = DigPot_Read(0);
-	}
-
-
-    while (1) 
+    while(bit_is_set(PINE, PE2))
     {
-        uint16_t led_sum = 0;
+        HID_Task();
+        USB_USBTask();
+    }
+    while(!bit_is_set(PINE, PE2))
+    {
+        HID_Task();
+        USB_USBTask();
+    }
 
-        MUX_Select(FIRST_PAD);
-        DigPot_Write(0, digpot_val[FIRST_PAD]);
-        _delay_us(500);
+    // turn LED red
 
+    led_channels[0] = 1023;
+    led_channels[1] = 0;
+    led_channels[2] = 0;
 
-        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    LED_WriteArray(led_channels);
+
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    {
+        MUX_Select(pad);
+        _delay_us(100);
+        for (int i = 0; i < NUM_OF_PUTS; ++i)
         {
-        
-
-
-
-            //bool dud = false;
-            //for(int i = 0; i < NUM_OF_DUDS; ++i)
-            //{
-            //    if (dud_pads[i] == pad)
-            //        dud = true;
-            //}
-            //if (dud)
-            //    continue;
-
-            int16_t val = 0;
-            int16_t hit = 0;
-            int16_t velo = 0;
-			//even rows are on ADC4 (= 0) and odd rows are on ADC5 (= 1)
-            uint8_t adc_number = (pad >> 3) % 2;
-
-            if (!bit_is_set(PINE, PE2))
-                goto calibrate;
-
-            hit = ADC_Read(DIFF_0_X200, adc_number);
-
-            if (hit < -500)
+            if (pad == pads_under_test[i])
             {
-
-                if (!sent[pad])
-                {
-                    velo = (-ADC_Read(DIFF_0_X10, adc_number));
-                    if (velo > 127)
-                        velo = 127;
-                    else if (val < 0)
-                        velo = 0;
-                    sent[pad] = true;
-                }
+                bool this_sensor_ok = true;
+                int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+                this_sensor_ok &= (val < 605);
+                this_sensor_ok &= (val > 585);
+                
+                if (!this_sensor_ok)
+                    HidInReports_Create_Pad_Report(pad, val, 0);
                 else
-                    velo = 0;
+                    HidInReports_Create_Pad_Report(pad, val, 1);
 
-                val = -ADC_Read(DIFF_0_X10, adc_number);
-                if (val >= 0)
-                {
-                    HidInReports_Create_Pad_Report(pad, val, velo);
-                    led_sum += val;
-                }
-
-
+                sensors_ok &= this_sensor_ok;
             }
-            else
-            {
-                if (sent[pad])
-                {
-                    HidInReports_Create_Pad_Report(pad, 0, 0);
-                    sent[pad] = false;
-                }
-            }
-
-            if (pad < LAST_PAD)
-            {
-                MUX_Select(pad + 1);
-                DigPot_Write(0, digpot_val[pad + 1]);
-            }
-
             HID_Task();
             USB_USBTask();
-            _delay_us(500);
-
         }
+    }
 
-        int led_channels[NUM_OF_LEDS][3];
-
-        led_sum <<= 1;
-
-        if (led_sum < 1024)
-        {
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = led_sum;
-                led_channels[i][2] = 1023 - led_sum;
-            }
-        }
-        else
-        {
-            if (led_sum > 2046)
-                led_sum = 2046;
-
-            led_sum -= 1023;
-
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = led_sum;
-                led_channels[i][1] = 1023 - led_sum;
-                led_channels[i][2] = 0;
-            }
-        }
+    if (sensors_ok)
+    {
+        // turn LED green
+        led_channels[0] = 0;
+        led_channels[1] = 1023;
+        led_channels[2] = 0;
         LED_WriteArray(led_channels);
     }
+
+    while(bit_is_set(PINE, PE2))
+    {
+        HID_Task();
+        USB_USBTask();
+    }
+
+    while(!bit_is_set(PINE, PE2))
+    {
+        HID_Task();
+        USB_USBTask();
+    }
+
+    while (1)
+    {
+        // turn LED off
+        led_channels[0] = 0;
+        led_channels[1] = 0;
+        led_channels[2] = 0;
+
+        LED_WriteArray(led_channels);
+        DAC_Write(0);
+
+        while(bit_is_set(PINE, PE2))
+        {
+            HID_Task();
+            USB_USBTask();
+        }
+
+        while(!bit_is_set(PINE, PE2))
+        {
+            HID_Task();
+            USB_USBTask();
+        }
+
+        // turn LED red
+        led_channels[0] = 1023; 
+        led_channels[1] = 0;
+        led_channels[2] = 0;
+
+        LED_WriteArray(led_channels);
+
+        for(int i = 0; i < 4096; ++i)
+        {
+            DAC_Write(i);
+            _delay_ms(100);
+            HID_Task();
+            USB_USBTask();
+        }
+
+        // turn LED white
+        led_channels[0] = 1023; 
+        led_channels[1] = 1023;
+        led_channels[2] = 511;
+
+        LED_WriteArray(led_channels);
+
+        while(bit_is_set(PINE, PE2))
+        {
+            HID_Task();
+            USB_USBTask();
+        }
+
+        while(!bit_is_set(PINE, PE2))
+        {
+            HID_Task();
+            USB_USBTask();
+        }
+
+    }
+
 }
 
 /** Configures the board hardware and chip peripherals for the demo's functionality. */
@@ -230,19 +230,10 @@ void SetupHardware(void)
     USB_Init();
     LED_Init();
     ADC_Init();
-    DigPot_Init();
+    DAC_Init();
     MIDI_Init();
 
-    // turn LED blue
-    int led_channels[NUM_OF_LEDS][3];
-
-    for (int i = 0; i < NUM_OF_LEDS; ++i)
-    {
-        led_channels[i][0] = 0;
-        led_channels[i][1] = 0;
-        led_channels[i][2] = 1023;
-    }
-    LED_WriteArray(led_channels);
+    ADC_SetRef(REF_VCC);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
@@ -252,7 +243,7 @@ void SetupHardware(void)
 }
 
 /** Event handler for the USB_Connect event. Starts the library USB task to begin the 
-  * enumeration and USB management process.
+ * enumeration and USB management process.
  */
 void EVENT_USB_Device_Connect(void)
 {
@@ -260,7 +251,7 @@ void EVENT_USB_Device_Connect(void)
 }
 
 /** Event handler for the USB_Disconnect event. Stops the USB management task.
- */
+*/
 void EVENT_USB_Device_Disconnect(void)
 {
     /* Indicate USB not ready */
@@ -332,11 +323,11 @@ void EVENT_USB_Device_ControlRequest(void)
 void ProcessGenericHIDReport(uint8_t* DataArray)
 {
     /*
-        This is where you need to process reports sent from the host to the device. This
-        function is called each time the host has sent a new report. DataArray is an array
-        holding the report sent from the host.
-    */
-    
+       This is where you need to process reports sent from the host to the device. This
+       function is called each time the host has sent a new report. DataArray is an array
+       holding the report sent from the host.
+       */
+
     // Received a MIDI message report
     if (DataArray[0] == 0x06) 
     {
@@ -352,17 +343,17 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
 void CreateGenericHIDReport(uint8_t* DataArray)
 {
     /*
-        This is where you need to create reports to be sent to the host from the device. This
-        function is called each time the host is ready to accept a new report. DataArray is
-        an array to hold the report to the host.
-    */
+       This is where you need to create reports to be sent to the host from the device. This
+       function is called each time the host is ready to accept a new report. DataArray is
+       an array to hold the report to the host.
+       */
 }
 
 void HID_Task(void)
 {
     /* Device must be connected and configured for the task to run */
     if (USB_DeviceState != DEVICE_STATE_Configured)
-      return;
+        return;
 
     Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
 
