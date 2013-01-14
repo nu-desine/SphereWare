@@ -30,8 +30,6 @@ void ADC_Init(void)
     ADCSRA |= (0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
     ADCSRB |= (1 << ADHSM);
 
-    ADC_SetRef(REF_2V56);
-
     prev_chan = 1;
     prev_mode = 1;
     ADC_Set(0, 0);
