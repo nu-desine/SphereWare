@@ -45,7 +45,8 @@ void ADC_Init(void)
     //ADC_Set(DIFF_0_X200, ADC4);
 
     //Enable the ADC and set the ADC clock prescale to 128, 16Mhz/128 = 125kHz
-    ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
+    ADCSRA |= (0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
+    ADCSRB |= (1 << ADHSM);
 
     prev_chan = 1;
     prev_mode = 1;
@@ -75,7 +76,7 @@ void ADC_Set(ADC_Mode mode, ADC_Channel chan)
       ADMUX  &= 0b11111100;
       ADMUX  |= chan & 0b11;
       prev_chan = chan;
-      _delay_ms(500);
+      _delay_us(500);
   }
 
     //or don't set anything

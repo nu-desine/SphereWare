@@ -76,26 +76,30 @@ int main(void)
     SetupHardware();
 
     sei();
-    _delay_ms(500);
 
+calibrate:
+    DigPot_Write(0, 0x001);
+    _delay_ms(500);
 	for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
 	{
 		int16_t val;
 		//even rows are on adc4 (==0) and odd rows are on adc5 (==1)
 		uint8_t adc_number = (pad >> 3) % 2;
+        HidInReports_Create_Pad_Report(pad, 0, 0);
 
 		MUX_Select(pad);
 		DigPot_Write(0, 0x001);
         _delay_ms(1);
 
-        val = ADC_Read(DIFF_0_X40, adc_number);
+        val = ADC_Read(DIFF_0_X200, adc_number);
 
-		while (val > 300)
+		while (val > 400)
 		{
 		    DigPot_Increment(0);
-            _delay_ms(1);
+            _delay_us(10);
 		    USB_USBTask();
-		    val = ADC_Read(DIFF_0_X40, adc_number);
+            HID_Task();
+		    val = ADC_Read(DIFF_0_X200, adc_number);
 		}
         digpot_val[pad] = DigPot_Read(0);
 	}
@@ -107,11 +111,16 @@ int main(void)
     {
         uint16_t led_sum = 0;
 
-        MUX_Select(FIRST_PAD);
-        DigPot_Write(0, digpot_val[FIRST_PAD]);
 
         for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
         {
+        
+
+        MUX_Select(pad);
+        DigPot_Write(0, digpot_val[pad]);
+
+        _delay_us(500);
+
 
             //bool dud = false;
             //for(int i = 0; i < NUM_OF_DUDS; ++i)
@@ -129,23 +138,26 @@ int main(void)
             uint8_t adc_number = (pad >> 3) % 2;
 
             if (!bit_is_set(PINE, PE2))
-                BootJump_Jump_To_Bootloader();
+                goto calibrate;
 
-            hit = ADC_Read(DIFF_0_X40, adc_number);
-            if (hit < 150)
+            hit = ADC_Read(DIFF_0_X200, adc_number);
+
+            if (hit < -500)
             {
+
                 if (!sent[pad])
                 {
-                    velo = (511 - hit) >> 3;
-                    //if (val <= 0)
-                    //    val = -1;
+                    velo = (-ADC_Read(DIFF_0_X10, adc_number));
+                    if (velo > 127)
+                        velo = 127;
+                    else if (val < 0)
+                        velo = 0;
                     sent[pad] = true;
                 }
                 else
                     velo = 0;
 
-                val = ADC_Read(DIFF_0_X40, adc_number);
-                val = 150 - val;
+                val = -ADC_Read(DIFF_0_X10, adc_number);
                 if (val >= 0)
                 {
                     HidInReports_Create_Pad_Report(pad, val, velo);
@@ -172,10 +184,11 @@ int main(void)
             HID_Task();
             USB_USBTask();
 
-            _delay_us(100);
         }
 
         int led_channels[NUM_OF_LEDS][3];
+
+        led_sum <<= 1;
 
         if (led_sum < 1024)
         {

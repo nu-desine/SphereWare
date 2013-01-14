@@ -26,8 +26,10 @@ void DigPot_Init(void)
 	// pull select line high
 	PORTB |= (1 << DIGPOT_SS);
 
-	// Enable SPI, Master, mode 0, set clock rate fck/4 = 4Mhz
+	// Enable SPI, Master, mode 0, set clock rate fck/2 = 8Mhz
 	SPCR = (1 << SPE)|(1 << MSTR)|(0 << SPR0)|(0 << SPR1)|(0 << CPHA)|(0 << CPOL);
+    SPSR |= (1 << SPI2X);
+
 }
 
 void DigPot_Write(uint8_t wiper_number, uint16_t data)
