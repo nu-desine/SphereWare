@@ -6,6 +6,8 @@
 6. Wait for button press
 7. Set DAC to 0, turn off LED
 8. Wait for button press
-9. Turn LED white, ramp DAC to 3.3V
-10. Wait for button press
-11. GOTO 7
+9. Turn LED red
+10. Ramp DAC to 3.3V (4095 steps at 1ms per step)
+11. Turn LED white
+12. Wait for button press
+13. GOTO 7

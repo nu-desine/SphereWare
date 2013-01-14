@@ -187,8 +187,8 @@ int main(void)
 
         for(int i = 0; i < 4096; ++i)
         {
-            DAC_Write(i);
-            _delay_ms(100);
+            //DAC_Write(i);
+            _delay_ms(1);
             HID_Task();
             USB_USBTask();
         }
