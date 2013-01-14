@@ -104,22 +104,20 @@ calibrate:
         digpot_val[pad] = DigPot_Read(0);
 	}
 
-    MUX_Select(FIRST_PAD);
-    DigPot_Write(0, digpot_val[FIRST_PAD]);
 
     while (1) 
     {
         uint16_t led_sum = 0;
+
+        MUX_Select(FIRST_PAD);
+        DigPot_Write(0, digpot_val[FIRST_PAD]);
+        _delay_us(500);
 
 
         for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
         {
         
 
-        MUX_Select(pad);
-        DigPot_Write(0, digpot_val[pad]);
-
-        _delay_us(500);
 
 
             //bool dud = false;
@@ -183,6 +181,7 @@ calibrate:
 
             HID_Task();
             USB_USBTask();
+            _delay_us(500);
 
         }
 
