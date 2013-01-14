@@ -26,42 +26,44 @@ uint8_t prev_mode;
   */
 void ADC_Init(void)
 {
-    // Select AVcc as the voltage reference
-    //ADMUX |= (1 << REFS0);
-
-    // Select internal 2.56V reference
-    ADMUX |= (1 << REFS1) | (1 << REFS0);
-
-    //ADC_Set(SINGLE_ENDED, ADC4);
-
-    //// ADC4 - ADC0 X 200 -- 111000
-    //ADMUX |= 0b11000;
-    //ADCSRB |= (1 << MUX5);
-
-    //// ADC4 - ADC0 X 40 -- 110000
-    //ADMUX |= 0b10000;
-    //ADCSRB |= (1 << MUX5);
-
-    //ADC_Set(DIFF_0_X200, ADC4);
-
     //Enable the ADC and set the ADC clock prescale to 128, 16Mhz/128 = 125kHz
     ADCSRA |= (0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0) | (1 << ADEN);
     ADCSRB |= (1 << ADHSM);
+
+    ADC_SetRef(REF_2V56);
 
     prev_chan = 1;
     prev_mode = 1;
     ADC_Set(0, 0);
 }
 
+
+/** Set the ADC reference voltage
+  */
+void ADC_SetRef(Ref_Mode mode)
+{
+    ADMUX &= ~(0 << REFS1) & ~(0 << REFS0);
+    switch(mode)
+    {
+        case REF_2V56:
+            ADMUX |= (1 << REFS1) | (1 << REFS0);
+            break;
+        case REF_VCC:
+            ADMUX |= (0 << REFS1) | (1 << REFS0);
+            break;
+        case REF_EXTERNAL:
+            break;
+    }
+}
+
+
+
 /** Set the correct mode and channel on the ADC MUX[5..0]
-    */
+    */ 
 void ADC_Set(ADC_Mode mode, ADC_Channel chan)
 {
   if (mode != prev_mode) 
   {
-      if (chan == ADC_PREV)
-          chan = ADMUX & 0b11;
-
       //set the correct MUX[5..0] for this mode and channel
       ADMUX  &= 0b11100000;
       ADCSRB &= 0b11011111;

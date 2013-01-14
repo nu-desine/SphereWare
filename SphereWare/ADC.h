@@ -22,7 +22,14 @@ typedef enum {
 	ADC_PREV = 0b11
 } ADC_Channel;
 
+typedef enum {
+    REF_2V56,
+    REF_VCC,
+    REF_EXTERNAL
+} Ref_Mode;
+
 void ADC_Init(void);
+void ADC_SetRef(Ref_Mode mode);
 void ADC_Set(ADC_Mode mode, ADC_Channel chan);
 int16_t ADC_Read(ADC_Mode mode, ADC_Channel chan);
 
