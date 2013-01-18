@@ -86,6 +86,9 @@ calibrate:
 		//even rows are on adc4 (==0) and odd rows are on adc5 (==1)
 		uint8_t adc_number = (pad >> 3) % 2;
         HidInReports_Create_Pad_Report(pad, 0, 0);
+        
+        for (int i = 0; i < 48; i++)
+            prev_val[i] = 0;
 
 		MUX_Select(pad);
 		DigPot_Write(0, 0x001);
@@ -156,11 +159,28 @@ calibrate:
                     velo = 0;
 
                 val = -ADC_Read(DIFF_0_X10, adc_number);
+                
+                //Currently when pressed at max depth val flickers
+                //between 510 and 511. This is likely to cause problems
+                //with some of the Trigger Modes in AlphaLive, so
+                //the next if statement has been implemented
+                //as a quick fix to this solution
+                if (val >= 510)
+                    val = 511;
+                
                 if (val >= 0)
                 {
-                    HidInReports_Create_Pad_Report(pad, val, velo);
+                    //only send a report if val is different from the
+                    //last val send for this pad. Sending a repetative
+                    //value of 511 was sometimes causing problems
+                    //in AlphaLive with some of the Trigger Modes
+                    if (val != prev_val[pad])
+                        HidInReports_Create_Pad_Report(pad, val, velo);
+                    
                     led_sum += val;
                 }
+                
+                prev_val[pad] = val;
 
 
             }

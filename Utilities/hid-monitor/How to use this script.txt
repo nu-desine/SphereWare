@@ -1,0 +1,5 @@
+How to run this script:
+Monitor all pads - python hid-monitor.py
+Monitor single pad - python hid-monitor.py [pad number]
+Monitor multiple pads - python hid-monitor.py [pad number],[pad number], etc…
+Monitor range of pads - python hid-monitor.py [lower pad number]:[higher pad number]
