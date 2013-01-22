@@ -33,5 +33,8 @@
 
 void DAC_Init(void);
 void DAC_Write(uint16_t data);
+void DAC_Increment(void);
+void DAC_Decrement(void);
+uint16_t DAC_GetState(void);
 
 #endif// __DAC_H__
