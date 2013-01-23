@@ -70,5 +70,7 @@
         void ProcessGenericHIDReport(uint8_t* DataArray);
         void CreateGenericHIDReport(uint8_t* DataArray);
 
+        int16_t prev_val[48];
+
 #endif
 
