@@ -48,8 +48,8 @@
         #include "Config/AppConfig.h"
 
         #include "ADC.h"
+        #include "DAC.h"
         #include "BootJump.h"
-        #include "DigPot.h"
         #include "LED.h"
         #include "MUX.h"
         #include "MIDI.h"

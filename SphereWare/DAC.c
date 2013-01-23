@@ -18,6 +18,8 @@
 */
 #include "DAC.h" 
 
+uint16_t dac_state; 
+
 void DAC_Init(void)
 {
 	// Set MOSI SCK SS and LDAC output, all others input 
@@ -30,8 +32,7 @@ void DAC_Init(void)
 	// Enable SPI, Master, mode 0, set clock rate fck/2 = 8Mhz
 	SPCR = (1 << SPE)|(1 << MSTR)|(0 << SPR0)|(0 << SPR1)|(0 << CPHA)|(0 << CPOL);
     SPSR |= (1 << SPI2X);
-
-
+    DAC_Write(0);
 }
 
 void DAC_Write(uint16_t data)
@@ -48,4 +49,20 @@ void DAC_Write(uint16_t data)
     PORTF &= ~(1 << LDAC);
     _delay_us(5);
     PORTF |= (1 << LDAC);
+    dac_state = data;
+}
+
+void DAC_Increment(void)
+{
+    DAC_Write(dac_state + 1);
+}
+
+void DAC_Decrement(void)
+{
+    DAC_Write(dac_state - 1);
+}
+
+uint16_t DAC_GetState(void)
+{
+    return dac_state;
 }
