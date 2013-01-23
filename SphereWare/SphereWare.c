@@ -343,6 +343,12 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
         MIDI_Send_Usb_Midi (DataArray);
         MIDI_Send_Uart_Midi (DataArray);
     }
+
+    // Received a host setup data request report
+    else if (DataArray[0] == 0x05) 
+    {
+        HidInReports_Create_Host_Setup_Report (1, 0);
+    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
