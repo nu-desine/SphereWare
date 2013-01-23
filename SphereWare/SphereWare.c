@@ -1,49 +1,49 @@
 /*
-             LUFA Library
-     Copyright (C) Dean Camera, 2012.
+   LUFA Library
+   Copyright (C) Dean Camera, 2012.
 
-  dean [at] fourwalledcubicle [dot] com
-           www.lufa-lib.org
-*/
+   dean [at] fourwalledcubicle [dot] com
+   www.lufa-lib.org
+   */
 
 /*
-  Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
+   Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
 
-  Permission to use, copy, modify, distribute, and sell this
-  software and its documentation for any purpose is hereby granted
-  without fee, provided that the above copyright notice appear in
-  all copies and that both that the copyright notice and this
-  permission notice and warranty disclaimer appear in supporting
-  documentation, and that the name of the author not be used in
-  advertising or publicity pertaining to distribution of the
-  software without specific, written prior permission.
+   Permission to use, copy, modify, distribute, and sell this
+   software and its documentation for any purpose is hereby granted
+   without fee, provided that the above copyright notice appear in
+   all copies and that both that the copyright notice and this
+   permission notice and warranty disclaimer appear in supporting
+   documentation, and that the name of the author not be used in
+   advertising or publicity pertaining to distribution of the
+   software without specific, written prior permission.
 
-  The author disclaim all warranties with regard to this
-  software, including all implied warranties of merchantability
-  and fitness.  In no event shall the author be liable for any
-  special, indirect or consequential damages or any damages
-  whatsoever resulting from loss of use, data or profits, whether
-  in an action of contract, negligence or other tortious action,
-  arising out of or in connection with the use or performance of
-  this software.
-*/
+   The author disclaim all warranties with regard to this
+   software, including all implied warranties of merchantability
+   and fitness.  In no event shall the author be liable for any
+   special, indirect or consequential damages or any damages
+   whatsoever resulting from loss of use, data or profits, whether
+   in an action of contract, negligence or other tortious action,
+   arising out of or in connection with the use or performance of
+   this software.
+   */
 
 /* Copyright (c) nu desine 2012 
 
-    This file is part of SphereWare.
+   This file is part of SphereWare.
 
-    SphereWare is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   SphereWare is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    SphereWare is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   SphereWare is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -80,32 +80,32 @@ int main(void)
 calibrate:
     DigPot_Write(0, 0x001);
     _delay_ms(500);
-	for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-	{
-		int16_t val;
-		//even rows are on adc4 (==0) and odd rows are on adc5 (==1)
-		uint8_t adc_number = (pad >> 3) % 2;
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    {
+        int16_t val;
+        //even rows are on adc4 (==0) and odd rows are on adc5 (==1)
+        uint8_t adc_number = (pad >> 3) % 2;
         HidInReports_Create_Pad_Report(pad, 0, 0);
-        
+
         for (int i = 0; i < 48; i++)
             prev_val[i] = 0;
 
-		MUX_Select(pad);
-		DigPot_Write(0, 0x001);
+        MUX_Select(pad);
+        DigPot_Write(0, 0x001);
         _delay_ms(1);
 
         val = ADC_Read(DIFF_0_X200, adc_number);
 
-		while (val > 400)
-		{
-		    DigPot_Increment(0);
+        while (val > 400)
+        {
+            DigPot_Increment(0);
             _delay_us(10);
-		    USB_USBTask();
+            USB_USBTask();
             HID_Task();
-		    val = ADC_Read(DIFF_0_X200, adc_number);
-		}
+            val = ADC_Read(DIFF_0_X200, adc_number);
+        }
         digpot_val[pad] = DigPot_Read(0);
-	}
+    }
 
 
     while (1) 
@@ -119,7 +119,7 @@ calibrate:
 
         for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
         {
-        
+
 
 
 
@@ -135,7 +135,7 @@ calibrate:
             int16_t val = 0;
             int16_t hit = 0;
             int16_t velo = 0;
-			//even rows are on ADC4 (= 0) and odd rows are on ADC5 (= 1)
+            //even rows are on ADC4 (= 0) and odd rows are on ADC5 (= 1)
             uint8_t adc_number = (pad >> 3) % 2;
 
             if (!bit_is_set(PINE, PE2))
@@ -159,7 +159,7 @@ calibrate:
                     velo = 0;
 
                 val = -ADC_Read(DIFF_0_X10, adc_number);
-                
+
                 //Currently when pressed at max depth val flickers
                 //between 510 and 511. This is likely to cause problems
                 //with some of the Trigger Modes in AlphaLive, so
@@ -167,7 +167,7 @@ calibrate:
                 //as a quick fix to this solution
                 if (val >= 510)
                     val = 511;
-                
+
                 if (val >= 0)
                 {
                     //only send a report if val is different from the
@@ -176,10 +176,10 @@ calibrate:
                     //in AlphaLive with some of the Trigger Modes
                     if (val != prev_val[pad])
                         HidInReports_Create_Pad_Report(pad, val, velo);
-                    
+
                     led_sum += val;
                 }
-                
+
                 prev_val[pad] = val;
 
 
@@ -272,7 +272,7 @@ void SetupHardware(void)
 }
 
 /** Event handler for the USB_Connect event. Starts the library USB task to begin the 
-  * enumeration and USB management process.
+ * enumeration and USB management process.
  */
 void EVENT_USB_Device_Connect(void)
 {
@@ -280,7 +280,7 @@ void EVENT_USB_Device_Connect(void)
 }
 
 /** Event handler for the USB_Disconnect event. Stops the USB management task.
- */
+*/
 void EVENT_USB_Device_Disconnect(void)
 {
     /* Indicate USB not ready */
@@ -352,11 +352,11 @@ void EVENT_USB_Device_ControlRequest(void)
 void ProcessGenericHIDReport(uint8_t* DataArray)
 {
     /*
-        This is where you need to process reports sent from the host to the device. This
-        function is called each time the host has sent a new report. DataArray is an array
-        holding the report sent from the host.
-    */
-    
+       This is where you need to process reports sent from the host to the device. This
+       function is called each time the host has sent a new report. DataArray is an array
+       holding the report sent from the host.
+       */
+
     // Received a MIDI message report
     if (DataArray[0] == 0x06) 
     {
@@ -372,17 +372,17 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
 void CreateGenericHIDReport(uint8_t* DataArray)
 {
     /*
-        This is where you need to create reports to be sent to the host from the device. This
-        function is called each time the host is ready to accept a new report. DataArray is
-        an array to hold the report to the host.
-    */
+       This is where you need to create reports to be sent to the host from the device. This
+       function is called each time the host is ready to accept a new report. DataArray is
+       an array to hold the report to the host.
+       */
 }
 
 void HID_Task(void)
 {
     /* Device must be connected and configured for the task to run */
     if (USB_DeviceState != DEVICE_STATE_Configured)
-      return;
+        return;
 
     Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
 
