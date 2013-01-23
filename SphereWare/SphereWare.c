@@ -64,9 +64,9 @@ uint8_t digpot_val[LAST_PAD+1];
 int16_t prev_hit[LAST_PAD+1] = {0};
 bool sent[LAST_PAD+1] = {false};
 
-#define NUM_OF_PUTS 2
+#define NUM_OF_PUTS 24 
 //uint8_t pads_under_test[NUM_OF_PUTS] = {0, 8, 16, 24, 32, 40};
-uint8_t pads_under_test[NUM_OF_PUTS] = {0, 1};//, 2, 3, 4, 5};
+uint8_t pads_under_test[NUM_OF_PUTS];// = {0, 1};//, 2, 3, 4, 5};
 
 //#define NUM_OF_DUDS 6
 //uint8_t dud_pads[NUM_OF_DUDS] = {32, 33, 34, 39, 40, 41};
@@ -79,6 +79,9 @@ int main(void)
 {
     bool sensors_ok = true;
     int led_channels[3];
+
+    for (int i = 0; i < NUM_OF_PUTS; ++i)
+        pads_under_test[i] = i;
 
     SetupHardware();
 
