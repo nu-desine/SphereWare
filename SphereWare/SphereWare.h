@@ -57,6 +57,14 @@
         
         #include <LUFA/Drivers/USB/USB.h>
 
+typedef enum {
+    SW3,
+    SW2,
+    ENC1B,
+    SW4,
+    ENC2B
+} ButtonOrDial; 
+
     /* Function Prototypes: */
         void SetupHardware(void);
         void HID_Task(void);

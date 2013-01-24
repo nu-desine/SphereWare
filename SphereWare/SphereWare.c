@@ -79,6 +79,7 @@ int main(void)
 {
     bool sensors_ok = true;
     int led_channels[3];
+    uint8_t button_dial_report = 0;
 
     for (int i = 0; i < NUM_OF_PUTS; ++i)
         pads_under_test[i] = i;
@@ -86,6 +87,30 @@ int main(void)
     SetupHardware();
 
     sei();
+
+    while (1)
+    {
+        for (int pad = 0; pad < 48; ++pad)
+        {
+            uint8_t elite_mux_num = pad & 0b111;
+
+            MUX_Select(pad);
+
+            switch (elite_mux_num)
+            {
+                case SW2:
+                case SW3:
+                case SW4:
+                    button_dial_report &= ~(1 << elite_mux_num);
+                    button_dial_report |= (bit_is_set(PIND, PD6) << elite_mux_num);
+                    break;
+                case ENC1B:
+                    button_dial_report &= 
+
+
+            
+    }
+        
     // turn LED blue
 
     led_channels[0] = 0;
