@@ -18,7 +18,7 @@
 */
 #include "DAC.h" 
 
-uint16_t dac_state; 
+uint16_t dac_state;
 
 void DAC_Init(void)
 {
@@ -32,24 +32,28 @@ void DAC_Init(void)
 	// Enable SPI, Master, mode 0, set clock rate fck/2 = 8Mhz
 	SPCR = (1 << SPE)|(1 << MSTR)|(0 << SPR0)|(0 << SPR1)|(0 << CPHA)|(0 << CPOL);
     SPSR |= (1 << SPI2X);
+
+    PORTF |= (1 << LDAC);
+
     DAC_Write(0);
+
 }
 
 void DAC_Write(uint16_t data)
 {
-	PORTB &= ~(1 << DIGPOT_SS);
 	// only use 12 bits
 	data &= 0xFFF;
-	SPDR = data & 0xFF;
+
+	PORTB &= ~(1 << DIGPOT_SS);
+	SPDR = ((data >> 8) & 0x0F) | 0b00110000;
 	while(!(SPSR & (1 << SPIF))); // wait
-	SPDR = (data >> 8) & 0b00111111;
+	SPDR = data & 0xFF;
 	while(!(SPSR & (1 << SPIF))); // wait
 	PORTB |= (1 << DIGPOT_SS);
 
     PORTF &= ~(1 << LDAC);
-    _delay_us(5);
+    _delay_us(10);
     PORTF |= (1 << LDAC);
-    dac_state = data;
 }
 
 void DAC_Increment(void)
@@ -66,3 +70,4 @@ uint16_t DAC_GetState(void)
 {
     return dac_state;
 }
+

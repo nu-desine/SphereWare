@@ -71,145 +71,185 @@ int main(void)
 {
     SetupHardware();
 
-    sei();
+   sei();
 
-calibrate:
-    DAC_Write(0);
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-    {
-        int16_t val;
-        HidInReports_Create_Pad_Report(pad, 0, 0);
+   for (;;) 
+   {
+       int16_t val;
+       int16_t dac_val;
 
-        MUX_Select(pad);
-        DAC_Write(0);
-        _delay_ms(1);
+    
+       MUX_Select(0);
 
-        val = ADC_Read(DIFF_0_X200, ADC4);
+       for (int i = 0; i < 4096; ++i)
+       {
+           DAC_Write(i);
+           _delay_us(10);
+           val = ADC_Read(DIFF_0_X200, ADC4);
 
-        while (val > 400)
-        {
-            DAC_Increment();
-            _delay_us(10);
-            USB_USBTask();
-            HID_Task();
-            val = ADC_Read(DIFF_0_X200, ADC4);
-        }
-        dac_val[pad] = DAC_GetState();
-    }
+           if (val < 0)
+           {
+               dac_val = i;
+               break;
+           }
 
+           HidInReports_Create_Pad_Report(0, val, 0);
+           _delay_ms(1);
+           USB_USBTask();
+           HID_Task();
+       }
+       while (1) 
+       {
+           //DAC_Write(dac_val);
+           //_delay_us(100);
+           val = ADC_Read(DIFF_0_X200, ADC4);
+           HidInReports_Create_Pad_Report(0, val, 0);
+           _delay_ms(1);
+           USB_USBTask();
+           HID_Task();
 
-    while (1) 
-    {
-        uint16_t led_sum = 0;
+       }
 
-        MUX_Select(FIRST_PAD);
-        DAC_Write(dac_val[FIRST_PAD]);
-        _delay_us(500);
-
-
-        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-        {
-
-            int16_t val = 0;
-            int16_t hit = 0;
-            int16_t velo = 0;
-
-            if (!bit_is_set(PINE, PE2))
-                goto calibrate;
-
-            hit = ADC_Read(DIFF_0_X200, ADC4);
-
-            if (hit < -500)
-            {
-
-                if (!sent[pad])
-                {
-                    velo = (-ADC_Read(DIFF_0_X10, ADC4));
-                    if (velo > 127)
-                        velo = 127;
-                    else if (val < 0)
-                        velo = 0;
-                    sent[pad] = true;
-                }
-                else
-                    velo = 0;
-
-                val = -ADC_Read(DIFF_0_X10, ADC4);
-
-                //Currently when pressed at max depth val flickers
-                //between 510 and 511. This is likely to cause problems
-                //with some of the Trigger Modes in AlphaLive, so
-                //the next if statement has been implemented
-                //as a quick fix to this solution
-                if (val >= 510)
-                    val = 511;
-
-                if (val >= 0)
-                {
-                    //only send a report if val is different from the
-                    //last val send for this pad. Sending a repetative
-                    //value of 511 was sometimes causing problems
-                    //in AlphaLive with some of the Trigger Modes
-                    if (val != prev_val[pad])
-                        HidInReports_Create_Pad_Report(pad, val, velo);
-
-                    led_sum += val;
-                }
-
-                prev_val[pad] = val;
+   }
 
 
-            }
-            else
-            {
-                if (sent[pad])
-                {
-                    HidInReports_Create_Pad_Report(pad, 0, 0);
-                    sent[pad] = false;
-                }
-            }
-
-            if (pad < LAST_PAD)
-            {
-                MUX_Select(pad + 1);
-                DAC_Write(dac_val[pad + 1]);
-            }
-
-            HID_Task();
-            USB_USBTask();
-            _delay_us(500);
-
-        }
-
-        int led_channels[NUM_OF_LEDS][3];
-
-        led_sum <<= 1;
-
-        if (led_sum < 1024)
-        {
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = led_sum;
-                led_channels[i][2] = 1023 - led_sum;
-            }
-        }
-        else
-        {
-            if (led_sum > 2046)
-                led_sum = 2046;
-
-            led_sum -= 1023;
-
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = led_sum;
-                led_channels[i][1] = 1023 - led_sum;
-                led_channels[i][2] = 0;
-            }
-        }
-        LED_WriteArray(led_channels);
-    }
+//calibrate:
+//    DAC_Write(0);
+//    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+//    {
+//        int16_t val;
+//        HidInReports_Create_Pad_Report(pad, 0, 0);
+//
+//        MUX_Select(pad);
+//        DAC_Write(0);
+//        _delay_ms(1);
+//
+//        val = ADC_Read(DIFF_0_X200, ADC4);
+//
+//        while (val > 400)
+//        {
+//            DAC_Increment();
+//            _delay_us(10);
+//            USB_USBTask();
+//            HID_Task();
+//            val = ADC_Read(DIFF_0_X200, ADC4);
+//        }
+//        dac_val[pad] = DAC_GetState();
+//    }
+//
+//
+//    while (1) 
+//    {
+//        uint16_t led_sum = 0;
+//
+//        MUX_Select(FIRST_PAD);
+//        DAC_Write(dac_val[FIRST_PAD]);
+//        _delay_us(500);
+//
+//
+//        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+//        {
+//
+//            int16_t val = 0;
+//            int16_t hit = 0;
+//            int16_t velo = 0;
+//
+//            if (!bit_is_set(PINE, PE2))
+//                goto calibrate;
+//
+//            hit = ADC_Read(DIFF_0_X200, ADC4);
+//
+//            if (hit < -500)
+//            {
+//
+//                if (!sent[pad])
+//                {
+//                    velo = (-ADC_Read(DIFF_0_X10, ADC4));
+//                    if (velo > 127)
+//                        velo = 127;
+//                    else if (val < 0)
+//                        velo = 0;
+//                    sent[pad] = true;
+//                }
+//                else
+//                    velo = 0;
+//
+//                val = -ADC_Read(DIFF_0_X10, ADC4);
+//
+//                //Currently when pressed at max depth val flickers
+//                //between 510 and 511. This is likely to cause problems
+//                //with some of the Trigger Modes in AlphaLive, so
+//                //the next if statement has been implemented
+//                //as a quick fix to this solution
+//                if (val >= 510)
+//                    val = 511;
+//
+//                if (val >= 0)
+//                {
+//                    //only send a report if val is different from the
+//                    //last val send for this pad. Sending a repetative
+//                    //value of 511 was sometimes causing problems
+//                    //in AlphaLive with some of the Trigger Modes
+//                    if (val != prev_val[pad])
+//                        HidInReports_Create_Pad_Report(pad, val, velo);
+//
+//                    led_sum += val;
+//                }
+//
+//                prev_val[pad] = val;
+//
+//
+//            }
+//            else
+//            {
+//                if (sent[pad])
+//                {
+//                    HidInReports_Create_Pad_Report(pad, 0, 0);
+//                    sent[pad] = false;
+//                }
+//            }
+//
+//            if (pad < LAST_PAD)
+//            {
+//                MUX_Select(pad + 1);
+//                DAC_Write(dac_val[pad + 1]);
+//            }
+//
+//            HID_Task();
+//            USB_USBTask();
+//            _delay_us(500);
+//
+//        }
+//
+//        int led_channels[NUM_OF_LEDS][3];
+//
+//        led_sum <<= 1;
+//
+//        if (led_sum < 1024)
+//        {
+//            for (int i = 0; i < NUM_OF_LEDS; ++i)
+//            {
+//                led_channels[i][0] = 0;
+//                led_channels[i][1] = led_sum;
+//                led_channels[i][2] = 1023 - led_sum;
+//            }
+//        }
+//        else
+//        {
+//            if (led_sum > 2046)
+//                led_sum = 2046;
+//
+//            led_sum -= 1023;
+//
+//            for (int i = 0; i < NUM_OF_LEDS; ++i)
+//            {
+//                led_channels[i][0] = led_sum;
+//                led_channels[i][1] = 1023 - led_sum;
+//                led_channels[i][2] = 0;
+//            }
+//        }
+//        LED_WriteArray(led_channels);
+//    }
 }
 
 /** Configures the board hardware and chip peripherals for the demo's functionality. */
@@ -230,15 +270,15 @@ void SetupHardware(void)
     MIDI_Init();
 
     // turn LED blue
-    int led_channels[NUM_OF_LEDS][3];
+    //int led_channels[NUM_OF_LEDS][3];
 
-    for (int i = 0; i < NUM_OF_LEDS; ++i)
-    {
-        led_channels[i][0] = 0;
-        led_channels[i][1] = 0;
-        led_channels[i][2] = 1023;
-    }
-    LED_WriteArray(led_channels);
+    //for (int i = 0; i < NUM_OF_LEDS; ++i)
+    //{
+    //    led_channels[i][0] = 0;
+    //    led_channels[i][1] = 0;
+    //    led_channels[i][2] = 511;
+    //}
+    //LED_WriteArray(led_channels);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
