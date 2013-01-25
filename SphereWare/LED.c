@@ -20,19 +20,16 @@
 
 // Set pins to outputs and initial states
 void LED_Init() {
-    //pinMode(datapin, OUTPUT);
-    //pinMode(latchpin, OUTPUT);
-    //pinMode(enablepin, OUTPUT);
-    //pinMode(clockpin, OUTPUT);
-    //digitalWrite(latchpin, LOW);
-    //digitalWrite(enablepin, LOW);
+
     CLKREG |= (1 << CLKPIN);
     ENAREG |= (1 << ENAPIN);
     LATREG |= (1 << LATPIN);
     DATREG |= (1 << DATPIN);
 
-    LATPORT |= ~(1 << LATPIN);
-    ENAPORT |= ~(1 << ENAPIN);
+    ENAPORT &= ~(1 << ENAPIN);
+    LATPORT &= ~(1 << LATPIN);
+    DATPORT &= ~(1 << DATPIN);
+    CLKPORT &= ~(1 << CLKPIN);
 
 }
 
@@ -59,6 +56,9 @@ void LED_SendPacket() {
         CLKPORT |= (1 << CLKPIN);
         CLKPORT &= ~(1 << CLKPIN); 
     } 
+
+    DATPORT &= ~(1 << DATPIN);
+    CLKPORT &= ~(1 << CLKPIN);
 }
 
 void LED_Latch() {

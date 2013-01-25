@@ -71,46 +71,62 @@ int main(void)
 {
     SetupHardware();
 
-   sei();
+    sei();
 
-   for (;;) 
-   {
-       int16_t val;
-       int16_t dac_val;
+    int16_t dac_val[LAST_PAD+1];
 
-    
-       MUX_Select(0);
+    DAC_Write(0);
 
-       for (int i = 0; i < 4096; ++i)
-       {
-           DAC_Write(i);
-           _delay_us(10);
-           val = ADC_Read(DIFF_0_X200, ADC4);
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    {
+        MUX_Select(pad);
+        _delay_us(10);
+        for (int i = 0; i < 4096; ++i)
+        {
+            int16_t val;
 
-           if (val < 0)
-           {
-               dac_val = i;
-               break;
-           }
+            DAC_Write(i);
+            _delay_us(10);
+            val = ADC_Read(DIFF_0_X40, ADC4);
 
-           HidInReports_Create_Pad_Report(0, val, 0);
-           _delay_ms(1);
-           USB_USBTask();
-           HID_Task();
-       }
-       while (1) 
-       {
-           //DAC_Write(dac_val);
-           //_delay_us(100);
-           val = ADC_Read(DIFF_0_X200, ADC4);
-           HidInReports_Create_Pad_Report(0, val, 0);
-           _delay_ms(1);
-           USB_USBTask();
-           HID_Task();
+            if (val < 0)
+            {
+                dac_val[pad] = i;
+                DAC_Write(0);
+                break;
+            }
 
-       }
+            HidInReports_Create_Pad_Report(pad, val, 0);
+            USB_USBTask();
+            HID_Task();
+        }
+    }
+    while (1)
+    {
+        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+        {
+            int16_t val;
 
-   }
+            DAC_Write(dac_val[pad]);
+            _delay_us(10);
+
+            MUX_Select(pad);
+            val = ADC_Read(DIFF_0_X40, ADC4);
+            HidInReports_Create_Pad_Report(pad, val, 0);
+            USB_USBTask();
+            HID_Task();
+        }
+        // turn LED blue
+        int led_channels[NUM_OF_LEDS][3];
+
+        for (int i = 0; i < NUM_OF_LEDS; ++i)
+        {
+            led_channels[i][0] = 0;
+            led_channels[i][1] = 0;
+            led_channels[i][2] = 1023;
+        }
+        LED_WriteArray(led_channels);
+    }
 
 
 //calibrate:
@@ -270,15 +286,15 @@ void SetupHardware(void)
     MIDI_Init();
 
     // turn LED blue
-    //int led_channels[NUM_OF_LEDS][3];
+    int led_channels[NUM_OF_LEDS][3];
 
-    //for (int i = 0; i < NUM_OF_LEDS; ++i)
-    //{
-    //    led_channels[i][0] = 0;
-    //    led_channels[i][1] = 0;
-    //    led_channels[i][2] = 511;
-    //}
-    //LED_WriteArray(led_channels);
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 0;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 1023;
+    }
+    LED_WriteArray(led_channels);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);

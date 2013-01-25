@@ -24,7 +24,7 @@ except IndexError:
 print look_at_pad
 print "Opening device"
 h = hid.device(0x1d50, 0x6021)
-h.set_nonblocking(1)
+h.set_nonblocking(0)
 
 #now = datetime.datetime.now()
 
@@ -48,16 +48,16 @@ data = []
 try:
     #counter = 0;
     while 1:
-        report = h.read(5)
-        try:
-            if report[0] == 0x01:
-                    decoded = (report[1], struct.unpack("h", "".join(map(chr, report[2:4])))[0], report[4])
-                    if report[1] in look_at_pad:
-                        data.append(decoded[1])
-                        print decoded
-        except IndexError:
-            time.sleep(0.001)
-            pass
+        report = h.read(1000)
+        #try:
+        if report[0] == 0x01:
+                decoded = (report[1], struct.unpack("h", "".join(map(chr, report[2:4])))[0], report[4])
+                if report[1] in look_at_pad:
+                    data.append(decoded[1])
+                    print decoded
+        #except IndexError:
+        #    time.sleep(0.001)
+        #    pass
         #f.write(str(decoded) + '\n')
         #buf = [ 0x00, 0x06, 0x90, (counter & 0xFF), 0x00] 
         #h.write(buf)
@@ -71,7 +71,7 @@ except KeyboardInterrupt:
     h.close();
     #f.close()
 except:
-    #subprocess.call(["mplayer", "ALARM.WAV"])
+    subprocess.call(["mplayer", "ALARM.WAV"])
     #f.close()
     h.close();
     raise
