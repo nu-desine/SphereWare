@@ -69,7 +69,37 @@ bool sent[LAST_PAD+1] = {false};
  */
 int main(void)
 {
-    SetupHardware();
+
+   bool led_on = true;
+   int led_channels[NUM_OF_LEDS][3];
+
+   SetupHardware();
+
+start:
+
+   if (led_on)
+   {
+       // turn LED blue
+       for (int i = 0; i < NUM_OF_LEDS; ++i)
+       {
+           led_channels[i][0] = 0;
+           led_channels[i][1] = 0;
+           led_channels[i][2] = 1023;
+       }
+   }
+   else
+   {
+       for (int i = 0; i < NUM_OF_LEDS; ++i)
+       {
+           led_channels[i][0] = 0;
+           led_channels[i][1] = 0;
+           led_channels[i][2] = 0;
+       }
+   }
+
+
+   LED_WriteArray(led_channels);
+
 
    sei();
 
@@ -78,7 +108,6 @@ int main(void)
        int16_t val;
        int16_t dac_val;
 
-    
        MUX_Select(0);
 
        for (int i = 0; i < 4096; ++i)
@@ -107,6 +136,14 @@ int main(void)
            _delay_ms(1);
            USB_USBTask();
            HID_Task();
+
+          if (!bit_is_set(PINE, PE2))
+          {
+              led_on = !led_on;
+              goto start;
+          }
+              
+
 
        }
 
@@ -268,17 +305,6 @@ void SetupHardware(void)
     ADC_Init();
     DAC_Init();
     MIDI_Init();
-
-    // turn LED blue
-    //int led_channels[NUM_OF_LEDS][3];
-
-    //for (int i = 0; i < NUM_OF_LEDS; ++i)
-    //{
-    //    led_channels[i][0] = 0;
-    //    led_channels[i][1] = 0;
-    //    led_channels[i][2] = 511;
-    //}
-    //LED_WriteArray(led_channels);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
