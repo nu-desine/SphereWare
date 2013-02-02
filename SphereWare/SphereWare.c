@@ -71,6 +71,17 @@ uint8_t pads_under_test[NUM_OF_PUTS];// = {0, 1};//, 2, 3, 4, 5};
 //#define NUM_OF_DUDS 6
 //uint8_t dud_pads[NUM_OF_DUDS] = {32, 33, 34, 39, 40, 41};
 
+/* returns change in encoder state (-1,0,1) */
+//int8_t read_encoder()
+//{
+//  static int8_t enc_states[] = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0}; //static!
+//  static uint8_t old_AB = 0;
+//  /**/
+//  old_AB <<= 2;                   //remember previous state
+//  old_AB |= ( ENC_PORT & 0x03 );  //add current state
+//  return ( enc_states[( old_AB & 0x0f )]);
+//}
+
 
 /** Main program entry point. This routine configures the hardware required by the application, then
  *  enters a loop to run the application tasks in sequence.
@@ -80,6 +91,7 @@ int main(void)
     bool sensors_ok = true;
     int led_channels[3];
     uint8_t button_dial_report = 0;
+    uint8_t pins = 0;
 
     for (int i = 0; i < NUM_OF_PUTS; ++i)
         pads_under_test[i] = i;
@@ -88,10 +100,14 @@ int main(void)
 
     sei();
 
+    PORTD = (1 << PD6) | (1 << PD0) | (1 << PD1);
+
     while (1)
     {
         for (int pad = 0; pad < 48; ++pad)
         {
+            //the MUX for the elite buttons and rotary encoders is on the same 
+            //MUX_A,B,C lines as the pads MUXs but it's always selected (INH tied to GND)
             uint8_t elite_mux_num = pad & 0b111;
 
             MUX_Select(pad);
@@ -102,13 +118,35 @@ int main(void)
                 case SW3:
                 case SW4:
                     button_dial_report &= ~(1 << elite_mux_num);
-                    button_dial_report |= (bit_is_set(PIND, PD6) << elite_mux_num);
+                    button_dial_report |= (((PIND >>  PD6) & 1) << elite_mux_num);
                     break;
                 case ENC1B:
-                    button_dial_report &= 
+                    button_dial_report &= ~(1 << 4) & ~(1 << 5);
+                    pins = PIND;
+                    button_dial_report |= (((pins >> PD6) & 1) << 4);
+                    button_dial_report |= (((pins >> PD0) & 1) << 5);
+                    break;
+                case ENC2B:
+                    button_dial_report &= ~(1 << 6) & ~(1 << 7);
+                    pins = PIND;
+                    button_dial_report |= (((pins >> PD6) & 1) << 6);
+                    button_dial_report |= (((pins >> PD1) & 1) << 7);
+                    break;
+            }
+            HidInReports_Create_Pad_Report(0, 0, button_dial_report);
+        }
 
+        //MUX_Select(ENC2B);
 
-            
+        //button_dial_report = 0;
+        //pins = PIND;
+        //button_dial_report |= (((pins >> PD6) & 1) << 4);
+        //button_dial_report |= (((pins >> PD1) & 1) << 5);
+        //HidInReports_Create_Pad_Report(0, 0, button_dial_report);
+
+        HID_Task();
+        USB_USBTask();
+
     }
         
     // turn LED blue
