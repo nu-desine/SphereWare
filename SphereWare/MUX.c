@@ -58,21 +58,14 @@ void MUX_Select(uint8_t channel)
           &  ~(1 << MUX_B) 
           &  ~(1 << MUX_C);
 
+    // MUX_A,B,C is determined by the 3 LSB of the channel
     PORTD |= (((channel     ) & 1) << MUX_A) 
           |  (((channel >> 1) & 1) << MUX_B) 
           |  (((channel >> 2) & 1) << MUX_C);
 
-
-    // the inhibit is active low so we invert this when doing the port IO 
-    //inhibit = 1 << (channel >> 3);
-
-    // we  would like activate two select lines at once switching well in advance of reading
-    // we could  do this as adjacent MUXs are on separate ADC inputs this allows for settling 
-    // after power- and MUX-switch 
-
-    inhibit = 0b11 << (channel >> 3);
-    if (inhibit == 0b1100000)
-    	inhibit = 0b100001; 
+    // the inhibits (a.k.a select lines) are determined by the 3 MSB 
+    // of the channel, it is active low so later we invert it when doing the port IO 
+    inhibit = 1 << (channel >> 3);
 
     PORTF |= (1 << MUX_INH_1);
     PORTD |= (1 << MUX_INH_2);
