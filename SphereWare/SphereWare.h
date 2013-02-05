@@ -54,6 +54,8 @@
         #include "MUX.h"
         #include "MIDI.h"
         #include "HidInReports.h"
+
+        #include <math.h>
         
         #include <LUFA/Drivers/USB/USB.h>
 

@@ -105,44 +105,168 @@ start:
 
    for (;;) 
    {
-       int16_t val;
+       int16_t val, prev_val = 0;
        int16_t dac_val;
 
        MUX_Select(0);
 
-       for (int i = 0; i < 4096; ++i)
+       for (int i = 0; i < 64; ++i)
        {
-           DAC_Write(i);
-           _delay_us(10);
-           val = ADC_Read(DIFF_0_X200, ADC4);
+           R2R_Write(i);
+           _delay_ms(1);
+           val = ADC_Read(DIFF_0_X40, ADC4);
 
-           if (val < 0)
+           if (val < 100)
            {
                dac_val = i;
                break;
            }
 
-           HidInReports_Create_Pad_Report(0, val, 0);
+           //HidInReports_Create_Pad_Report(0, val, 0);
            _delay_ms(1);
            USB_USBTask();
            HID_Task();
        }
+
+
+       int16_t threshold, hit = 0;
+       uint32_t wait = 0;
+       uint32_t avg = 0;
+       uint8_t count = 0;
+       int16_t values[256];
+       bool sent = false;
+
+       int i = 0;
        while (1) 
        {
            //DAC_Write(dac_val);
            //_delay_us(100);
-           val = ADC_Read(DIFF_0_X200, ADC4);
-           HidInReports_Create_Pad_Report(0, val, 0);
-           _delay_ms(1);
+           //val = (ADC_Read(DIFF_0_X40, ADC4) * 0.3) + (prev_val * 0.7);
+           val = ADC_Read(DIFF_0_X40, ADC4);
+           //HidInReports_Create_Pad_Report(0, val, 0);
+
+           //prev_val = val;
+
+           if (val < 0)
+           {
+               if (!sent)
+               {
+                   //uint8_t report_data[GENERIC_REPORT_SIZE];
+                   //report_data[0] = 0x04; //dial data command ID
+
+                   //for (int i = 2; i < GENERIC_REPORT_SIZE; i += 2)
+                   //{
+                   //    val = ADC_Read(DIFF_0_X40, ADC4);
+                   //    report_data[i] = val & 0xFF;
+                   //    report_data[i+1] = val >> 8;
+                   //}
+                   //HidInReports_Send_Report (report_data);
+                   avg = -val;
+
+                   for (int i = 0; i < 255; ++i)
+                   {
+                       avg += -ADC_Read(DIFF_0_X40, ADC4);
+                   }
+
+                   avg /= 256;
+                   avg >>= 1;
+                   
+                   //float scale = 1.0 + (20.0 / 44.0) * log10((float)avg / 511.0);
+                   //avg = 127 * scale;
+
+                   if(avg > 0)
+                   {
+                       if (avg > 127)
+                           avg = 127;
+                       HidInReports_Create_Pad_Report(0, avg, avg);
+                       sent = true;
+                   }
+               }
+           }
+           else 
+           {
+               sent = false;
+               _delay_ms(100);
+           }
+
+               
+           //if (val < 0)
+           //{
+           //    ++i;
+           //    if (i < 4)
+           //    {
+           //        if (val < hit)
+           //        {
+           //            hit = val;
+           //        }
+           //    }
+           //    else if (hit < 0)
+           //    { 
+           //        hit = -hit;
+           //        float scale = 1.0 + (20.0 / 44.0) * log10((float)hit / 511.0);
+           //        val = 127 * scale;
+           //        HidInReports_Create_Pad_Report(1, val, 0);
+           //    }
+           //}
+           //else if (i > 50)
+           //{
+           //    hit = 0;
+           //    i = 0;
+           //}
+                   
+            
+
+
+           //if (val < threshold)
+           //{
+           //    if (!sent[0])
+           //    {
+           //        avg -= (ADC_Read(DIFF_0_X40, ADC4) + val);
+           //        count += 2;
+
+           //        if (count == 48)
+           //        {
+           //            avg /= 32;
+           //            count = 0;
+
+           //            int16_t velo = avg >> 2;
+
+           //            if (velo > 0)
+           //            {
+           //                    //if (velo > 127)
+           //                    //    velo = 127;
+
+           //                sent[0] = true;
+           //                HidInReports_Create_Pad_Report(0, velo, 0);
+           //                //threshold = -30;
+           //                //wait = 100000;
+           //            }
+           //        }
+           //    }
+           //}
+           //else if (sent[0])
+           //{
+           //    HidInReports_Create_Pad_Report(0, 0, 0);
+           //    sent[0] = false;
+           //}
+           //else
+           //    if (wait)
+           //        wait--;
+           //    else
+           //    {
+           //        threshold = 0;
+           //        count = 0;
+           //    }
+
+
+           if (!bit_is_set(PINE, PE2))
+           {
+               led_on = !led_on;
+               goto start;
+           }
            USB_USBTask();
            HID_Task();
-
-          if (!bit_is_set(PINE, PE2))
-          {
-              led_on = !led_on;
-              goto start;
-          }
-              
+           _delay_ms(1); 
 
 
        }
@@ -151,27 +275,27 @@ start:
 
 
 //calibrate:
-//    DAC_Write(0);
+//    R2R_Write(0);
 //    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
 //    {
 //        int16_t val;
 //        HidInReports_Create_Pad_Report(pad, 0, 0);
 //
 //        MUX_Select(pad);
-//        DAC_Write(0);
+//        R2R_Write(0);
 //        _delay_ms(1);
 //
 //        val = ADC_Read(DIFF_0_X200, ADC4);
 //
 //        while (val > 400)
 //        {
-//            DAC_Increment();
+//            R2R_Increment();
 //            _delay_us(10);
 //            USB_USBTask();
 //            HID_Task();
 //            val = ADC_Read(DIFF_0_X200, ADC4);
 //        }
-//        dac_val[pad] = DAC_GetState();
+//        dac_val[pad] = R2R_GetState();
 //    }
 //
 //
@@ -180,7 +304,7 @@ start:
 //        uint16_t led_sum = 0;
 //
 //        MUX_Select(FIRST_PAD);
-//        DAC_Write(dac_val[FIRST_PAD]);
+//        R2R_Write(dac_val[FIRST_PAD]);
 //        _delay_us(500);
 //
 //
@@ -249,7 +373,7 @@ start:
 //            if (pad < LAST_PAD)
 //            {
 //                MUX_Select(pad + 1);
-//                DAC_Write(dac_val[pad + 1]);
+//                R2R_Write(dac_val[pad + 1]);
 //            }
 //
 //            HID_Task();
@@ -303,7 +427,7 @@ void SetupHardware(void)
     USB_Init();
     LED_Init();
     ADC_Init();
-    DAC_Init();
+    R2R_Init();
     MIDI_Init();
 
     //PE2 button as input pulled high
