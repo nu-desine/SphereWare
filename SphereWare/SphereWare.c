@@ -252,6 +252,7 @@ void SetupHardware(void)
     ADC_Init();
     DigPot_Init();
     MIDI_Init();
+    HidInReports_Init ();
 
     // turn LED blue
     int led_channels[NUM_OF_LEDS][3];
