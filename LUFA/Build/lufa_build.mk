@@ -1,4 +1,4 @@
-#
+
 #             LUFA Library
 #     Copyright (C) Dean Camera, 2012.
 #
@@ -271,7 +271,7 @@ $(OBJDIR)/%.o: %.S $(MAKEFILE_LIST)
 .SECONDARY : %.elf
 %.elf: $(OBJECT_FILES)
 	@echo $(MSG_LINK_CMD) Linking object files into \"$@\"
-	$(CROSS)-gcc $(BASE_LD_FLAGS) $(LD_FLAGS) $^ -o $@
+	$(CROSS)-gcc $(BASE_LD_FLAGS) $(LD_FLAGS) $^ -o $@ -lm
 
 %.hex: %.elf
 	@echo $(MSG_OBJCPY_CMD) Extracting HEX file data from \"$<\"
