@@ -56,8 +56,36 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 23 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
+
+
+//this is the calibration procedure
+void Calibrate (uint8_t* r2r_value_array)
+{
+    int16_t val;
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    {
+        MUX_Select(pad);
+        _delay_ms(1);
+        for (int i = 0; i < 64; ++i)
+        {
+            R2R_Write(i);
+            _delay_ms(1);
+            val = ADC_Read(DIFF_0_X10, ADC4);
+
+            if (val < 40)
+            {
+                r2r_value_array[pad] = i;
+                break;
+            }
+        }
+        //keep the USB connection alive
+        USB_USBTask();
+        HID_Task();
+    }
+}
+
 
 
 /** Main program entry point. This routine configures the hardware required by the application, then
@@ -66,114 +94,94 @@
 int main(void)
 {
 
-   bool led_on = true;
-   int led_channels[NUM_OF_LEDS][3];
-   int16_t val = 0;
-   uint8_t r2r_val[LAST_PAD+1] = {0};
-   int16_t peak[LAST_PAD+1] = {0};
-   bool velocity_sent[LAST_PAD+1] = {false};
-   uint8_t sample_count[LAST_PAD+1] = {0};
+    bool led_on = true;
+    int led_channels[NUM_OF_LEDS][3];
+    int16_t val = 0;
+    int16_t peak[LAST_PAD+1] = {0};
+    uint8_t r2r_values[LAST_PAD+1];
+    bool velocity_sent[LAST_PAD+1] = {false};
+    uint8_t sample_count[LAST_PAD+1] = {0};
 
-   SetupHardware();
+    SetupHardware();
 
+    sei();
 
-   // turn LED blue
-   for (int i = 0; i < NUM_OF_LEDS; ++i)
-   {
-       led_channels[i][0] = 0;
-       led_channels[i][1] = 0;
-       led_channels[i][2] = 1023;
-   }
+    // turn LED blue
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 0;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 1023;
+    }
 
-   LED_WriteArray(led_channels);
+    LED_WriteArray(led_channels);
 
+    Calibrate(r2r_values);
 
-   sei();
+    MUX_Select(FIRST_PAD);
+    R2R_Write(r2r_values[FIRST_PAD]);
+    _delay_us(90);
 
+    while (1) 
+    {
+        MUX_Select(FIRST_PAD);
+        R2R_Write(r2r_values[FIRST_PAD]);
+        _delay_us(10);
 
-   for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-   {
-       MUX_Select(pad);
-       _delay_ms(1);
-       for (int i = 0; i < 64; ++i)
-       {
-           R2R_Write(i);
-           _delay_ms(1);
-           val = ADC_Read(DIFF_0_X10, ADC4);
+        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+        {
+            _delay_us(10);
+            val = ADC_Read(DIFF_0_X10, ADC4);
+            //if (pad == LOOK_AT_PAD)
+            //    HidInReports_Create_Pad_Report(pad, val, val);
+            if (val < 0)
+            {
+                if (!velocity_sent[pad])
+                {
+                    for (int i = 0; i < 200; ++i)
+                    {
+                        val = ADC_Read(DIFF_0_X10, ADC4);
+                        if (val < peak[pad])
+                        {
+                            peak[pad] = val;
+                        }
+                    }
+                    if ((-peak[pad] >> 2) > 0)
+                    {
+                        //if (pad == LOOK_AT_PAD)
+                        HidInReports_Create_Pad_Report(pad, -peak[pad], -peak[pad] >> 2);
+                        peak[pad] = 0;
+                        velocity_sent[pad] = true;
+                    }
+                }
+                else
+                {
+                    //if (pad == LOOK_AT_PAD)
+                    HidInReports_Create_Pad_Report(pad, -val, 0);
+                }
+            }
+            else
+            {
+                if (velocity_sent[pad])
+                {
+                    HidInReports_Create_Pad_Report(pad, 0, 0);
+                }
+                velocity_sent[pad] = false;
+                sample_count[pad] = 0;
+                peak[pad] = 0;
+            }
 
-           if (val < 40)
-           {
-               r2r_val[pad] = i;
-               break;
-           }
-           USB_USBTask();
-           HID_Task();
-       }
-   }
+            if (pad < LAST_PAD)
+            {
+                MUX_Select(pad+1);
+                R2R_Write(r2r_values[pad+1]);
+            }
 
-   while (1) 
-   {
-       MUX_Select(FIRST_PAD);
-       R2R_Write(r2r_val[FIRST_PAD]);
-       _delay_us(90);
+            USB_USBTask();
+            HID_Task();
+        }
 
-       for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-       {
-           _delay_us(10);
-           val = ADC_Read(DIFF_0_X10, ADC4);
-           //if (pad == LOOK_AT_PAD)
-           //    HidInReports_Create_Pad_Report(pad, val, val);
-           if (val < 0)
-           {
-               if (!velocity_sent[pad])
-               {
-                   for (int i = 0; i < 200; ++i)
-                   {
-                       val = ADC_Read(DIFF_0_X10, ADC4);
-                       if (val < peak[pad])
-                       {
-                           peak[pad] = val;
-                       }
-                   }
-                   if ((-peak[pad] >> 2) > 0)
-                   {
-                       //if (pad == LOOK_AT_PAD)
-                           HidInReports_Create_Pad_Report(pad, -peak[pad], -peak[pad] >> 2);
-                       peak[pad] = 0;
-                       velocity_sent[pad] = true;
-                   }
-               }
-               else
-               {
-                   val = -ADC_Read(DIFF_0_X10, ADC4);
-                   //if (pad == LOOK_AT_PAD)
-                       HidInReports_Create_Pad_Report(pad, val, 0);
-               }
-
-
-           }
-           else
-           {
-               if (velocity_sent[pad])
-               {
-                   HidInReports_Create_Pad_Report(pad, 0, 0);
-               }
-               velocity_sent[pad] = false;
-               sample_count[pad] = 0;
-               peak[pad] = 0;
-           }
-
-           if (pad < LAST_PAD)
-           {
-               MUX_Select(pad+1);
-               R2R_Write(r2r_val[pad+1]);
-           }
-
-           USB_USBTask();
-           HID_Task();
-       }
-   
-   }
+    }
 
 }
 
