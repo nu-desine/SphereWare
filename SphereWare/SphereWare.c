@@ -66,6 +66,7 @@ void Calibrate (uint8_t* r2r_value_array)
     int16_t val;
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
     {
+        r2r_value_array[pad] = 0;
         MUX_Select(pad);
         _delay_ms(1);
         for (int i = 0; i < 64; ++i)
@@ -84,6 +85,15 @@ void Calibrate (uint8_t* r2r_value_array)
         USB_USBTask();
         HID_Task();
     }
+
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    {
+        val = ADC_Read(DIFF_0_X10, ADC4);
+        if (val < 10)
+            r2r_value_array[pad]--;
+    }
+
+        
 }
 
 
@@ -99,7 +109,7 @@ int main(void)
     int16_t val = 0;
     int16_t peak[LAST_PAD+1] = {0};
     uint8_t r2r_values[LAST_PAD+1];
-    bool velocity_sent[LAST_PAD+1] = {false};
+    uint8_t velocity[LAST_PAD+1] = {0};
     uint8_t sample_count[LAST_PAD+1] = {0};
 
     SetupHardware();
@@ -126,63 +136,70 @@ int main(void)
     {
         MUX_Select(FIRST_PAD);
         R2R_Write(r2r_values[FIRST_PAD]);
-        _delay_us(10);
+        _delay_us(50);
 
-        for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+        for (int row = 0; row < 6; ++row)
         {
-            _delay_us(10);
-            val = ADC_Read(DIFF_0_X10, ADC4);
-            //if (pad == LOOK_AT_PAD)
-            //    HidInReports_Create_Pad_Report(pad, val, val);
-            if (val < 0)
+            MUX_Select(row << 3);
+            _delay_us(50);
+            for (int i = 0; i < 8; ++i)
             {
-                if (!velocity_sent[pad])
+                uint8_t pad = row << 3 | i;
+                MUX_Select(pad);
+                R2R_Write(r2r_values[pad]);
+                val = ADC_Read(DIFF_0_X10, ADC4);
+                //if (pad == LOOK_AT_PAD)
+                //    HidInReports_Create_Pad_Report(pad, val, val);
+                if (val < 0)
                 {
-                    for (int i = 0; i < 200; ++i)
+                    if (velocity[pad] == 0)
                     {
-                        val = ADC_Read(DIFF_0_X10, ADC4);
-                        if (val < peak[pad])
+                        for (int i = 0; i < 200; ++i)
                         {
-                            peak[pad] = val;
+                            val = ADC_Read(DIFF_0_X10, ADC4);
+                            if (val < peak[pad])
+                            {
+                                peak[pad] = val;
+                            }
+                        }
+                        if ((-peak[pad] >> 2) > 0)
+                        {
+                            velocity[pad] = -peak[pad] >> 2;
+                            //if (pad == LOOK_AT_PAD)
+                            HidInReports_Create_Pad_Report(pad, -peak[pad], velocity[pad]);
+                            peak[pad] = 0;
                         }
                     }
-                    if ((-peak[pad] >> 2) > 0)
+                    else
                     {
                         //if (pad == LOOK_AT_PAD)
-                        HidInReports_Create_Pad_Report(pad, -peak[pad], -peak[pad] >> 2);
-                        peak[pad] = 0;
-                        velocity_sent[pad] = true;
+                        HidInReports_Create_Pad_Report(pad, -val, velocity[pad]);
                     }
                 }
                 else
                 {
-                    //if (pad == LOOK_AT_PAD)
-                    HidInReports_Create_Pad_Report(pad, -val, 0);
+                    if (velocity[pad] != 0)
+                    {
+                        HidInReports_Create_Pad_Report(pad, 0, 0);
+                    }
+                    velocity[pad] = 0;
+                    sample_count[pad] = 0;
+                    peak[pad] = 0;
                 }
-            }
-            else
-            {
-                if (velocity_sent[pad])
-                {
-                    HidInReports_Create_Pad_Report(pad, 0, 0);
-                }
-                velocity_sent[pad] = false;
-                sample_count[pad] = 0;
-                peak[pad] = 0;
+
+                //if (pad < LAST_PAD)
+                //{
+                //    MUX_Select(pad+1);
+                //    R2R_Write(r2r_values[pad+1]);
+                //}
+
+                USB_USBTask();
+                HID_Task();
             }
 
-            if (pad < LAST_PAD)
-            {
-                MUX_Select(pad+1);
-                R2R_Write(r2r_values[pad+1]);
-            }
-
-            USB_USBTask();
-            HID_Task();
         }
 
     }
-
 }
 
 /** Configures the board hardware and chip peripherals for the demo's functionality. */
