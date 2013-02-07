@@ -18,6 +18,17 @@
 */
 #include "HidInReports.h"
 
+uint8_t pad_report[GENERIC_REPORT_SIZE];
+
+void HidInReports_Init (void)
+{
+    pad_report[0] = 0x01;
+    for (int i = 1; i < GENERIC_REPORT_SIZE; ++i)
+    {
+        pad_report[i] = 0;
+    }
+}
+
 void HidInReports_Send_Report (uint8_t* report_data)
 {
     /* Device must be connected and configured for the task to run */
@@ -44,19 +55,19 @@ void HidInReports_Send_Report (uint8_t* report_data)
     }
 }
 
+#define SIZE_OF_PAD_DATA 3 
+
 void HidInReports_Create_Pad_Report (uint8_t pad_number, 
                                      int pad_value, 
                                      uint8_t pad_velocity)
 {
-    uint8_t report_data[GENERIC_REPORT_SIZE];
+    uint8_t pad_address = pad_number * SIZE_OF_PAD_DATA;
     
-    report_data[0] = 0x01; //pad data command ID
-    report_data[1] = pad_number;
-    report_data[2] = pad_value & 0xFF;
-    report_data[3] = (pad_value >> 8) & 0xFF;
-    report_data[4] = pad_velocity;
+    pad_report[1 + pad_address] = pad_value;
+    pad_report[2 + pad_address] = (pad_value >> 8) & 0xFF;
+    pad_report[3 + pad_address] = pad_velocity;
     
-    HidInReports_Send_Report (report_data);
+    HidInReports_Send_Report (pad_report);
 }
 
 void HidInReports_Create_Button_Report (uint8_t button_number, 
@@ -79,6 +90,18 @@ void HidInReports_Create_Dial_Report (uint8_t dial_number,
     report_data[0] = 0x03; //dial data command ID
     report_data[1] = dial_number;
     report_data[2] = dial_value;
+    
+    HidInReports_Send_Report (report_data);
+}
+
+void HidInReports_Create_Host_Setup_Report (uint8_t firmware_version, 
+                                            uint8_t device_type)
+{
+    uint8_t report_data[GENERIC_REPORT_SIZE];
+    
+    report_data[0] = 0x04; //host setup data command ID
+    report_data[1] = firmware_version;
+    report_data[2] = device_type;
     
     HidInReports_Send_Report (report_data);
 }
