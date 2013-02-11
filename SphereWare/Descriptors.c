@@ -73,12 +73,6 @@ const USB_Descriptor_HIDReport_Datatype_t PROGMEM GenericReport[] =
         HID_RI_REPORT_SIZE(8, 0x08),
         HID_RI_REPORT_COUNT(8, GENERIC_REPORT_SIZE),
         HID_RI_INPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE),
-        HID_RI_USAGE(8, 0x03), /* Vendor Usage 3 */
-        HID_RI_LOGICAL_MINIMUM(8, 0x00),
-        HID_RI_LOGICAL_MAXIMUM(8, 0xFF),
-        HID_RI_REPORT_SIZE(8, 0x08),
-        HID_RI_REPORT_COUNT(8, GENERIC_REPORT_SIZE),
-        HID_RI_OUTPUT(8, HID_IOF_DATA | HID_IOF_VARIABLE | HID_IOF_ABSOLUTE | HID_IOF_NON_VOLATILE),
     HID_RI_END_COLLECTION(0),
 };
 
@@ -91,7 +85,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 {
     .Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
 
-    .USBSpecification       = VERSION_BCD(01.10),
+    .USBSpecification       = VERSION_BCD(02.00),
 
     .Class                  = USB_CSCP_IADDeviceClass,
     .SubClass               = USB_CSCP_IADDeviceSubclass,
@@ -129,7 +123,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 
             .ConfigAttributes       = (USB_CONFIG_ATTR_RESERVED | USB_CONFIG_ATTR_SELFPOWERED),
 
-            .MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
+            .MaxPowerConsumption    = USB_CONFIG_POWER_MA(500)
         },
 
     .Audio_IAD =
