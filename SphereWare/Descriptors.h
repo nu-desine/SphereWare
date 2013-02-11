@@ -85,7 +85,7 @@
         #define GENERIC_OUT_EPADDR        (ENDPOINT_DIR_OUT | 4)
 
         /** Size in bytes of the Generic HID reporting endpoint. */
-        #define GENERIC_EPSIZE            8
+        #define GENERIC_EPSIZE           64
 
         /** Endpoint address of the MIDI streaming data IN endpoint, for device-to-host data transfers. */
         #define MIDI_STREAM_IN_EPADDR       (ENDPOINT_DIR_IN  | 2)
