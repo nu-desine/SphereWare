@@ -57,15 +57,6 @@
         
         #include <LUFA/Drivers/USB/USB.h>
 
-#define ELITE_MASK 0b00100011
-
-typedef enum {
-    SW3,
-    SW2,
-    ENC1B,
-    SW4,
-    ENC2B
-} ButtonOrDial; 
 
     /* Function Prototypes: */
         void SetupHardware(void);
