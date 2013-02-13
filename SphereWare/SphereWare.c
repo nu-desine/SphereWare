@@ -218,7 +218,6 @@ void SetupHardware(void)
     ADC_Init();
     R2R_Init();
     MIDI_Init();
-    HidInReports_Init();
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);

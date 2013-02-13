@@ -67,5 +67,4 @@ void HidInReports_Create_Dial_Report (uint8_t dial_number,
 void HidInReports_Create_Host_Setup_Report (uint8_t firmware_version, 
                                             uint8_t device_type);
 
-void HidInReports_Init (void);
 #endif// __HIDINREPORTS_H__ 
