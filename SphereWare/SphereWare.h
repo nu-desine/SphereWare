@@ -54,6 +54,7 @@
         #include "MUX.h"
         #include "MIDI.h"
         #include "HidInReports.h"
+        #include "ButtonsAndDials.h"
 
         #include <math.h>
         

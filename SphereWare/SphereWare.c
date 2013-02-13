@@ -147,6 +147,7 @@ int main(void)
                 uint8_t pad = row << 3 | i;
                 MUX_Select(pad);
                 R2R_Write(r2r_values[pad]);
+                ButtonsAndDials_Read(pad);
                 val = ADC_Read(DIFF_0_X10, ADC4);
                 //if (pad == LOOK_AT_PAD)
                 //    HidInReports_Create_Pad_Report(pad, val, val);
@@ -218,6 +219,7 @@ void SetupHardware(void)
     ADC_Init();
     R2R_Init();
     MIDI_Init();
+    ButtonsAndDials_Init();
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
