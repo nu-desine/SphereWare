@@ -107,10 +107,11 @@ int main(void)
     bool led_on = true;
     int led_channels[NUM_OF_LEDS][3];
     int16_t val = 0;
-    int16_t peak[LAST_PAD+1] = {0};
+    int16_t peak[LAST_PAD+1];
     uint8_t r2r_values[LAST_PAD+1];
-    uint8_t velocity[LAST_PAD+1] = {0};
-    uint8_t sample_count[LAST_PAD+1] = {0};
+    uint8_t velocity[LAST_PAD+1];
+    uint8_t sample_count[LAST_PAD+1];
+    int16_t prev_val[LAST_PAD+1];
 
     SetupHardware();
 
@@ -168,13 +169,20 @@ int main(void)
                             velocity[pad] = -peak[pad] >> 2;
                             //if (pad == LOOK_AT_PAD)
                             HidInReports_Create_Pad_Report(pad, -peak[pad], velocity[pad]);
+                            prev_val[pad] = -peak[pad];
                             peak[pad] = 0;
                         }
                     }
                     else
                     {
-                        //if (pad == LOOK_AT_PAD)
-                        HidInReports_Create_Pad_Report(pad, -val, velocity[pad]);
+                        val = (-val + prev_val[pad]) >> 1;
+                        if (val != prev_val[pad])
+                        {
+                            if (val == 510)
+                                val = 511;
+                            HidInReports_Create_Pad_Report(pad, val, velocity[pad]);
+                            prev_val[pad] = val;
+                        }
                     }
                 }
                 else
@@ -182,6 +190,7 @@ int main(void)
                     if (velocity[pad] != 0)
                     {
                         HidInReports_Create_Pad_Report(pad, 0, 0);
+                        prev_val[pad] = 0;
                     }
                     velocity[pad] = 0;
                     sample_count[pad] = 0;
