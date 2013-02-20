@@ -43,6 +43,6 @@
 #ifndef _APP_CONFIG_H_
 #define _APP_CONFIG_H_
 
-    #define GENERIC_REPORT_SIZE      255
+    #define GENERIC_REPORT_SIZE 128 
 
 #endif

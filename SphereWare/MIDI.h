@@ -35,19 +35,26 @@
 void MIDI_Init(void);
 
 //==============================================================================
+/** Creates and sends a MIDI message.
+ 
+ @param DataArray        the array of data that needs to be sent
+ */
+void MIDI_Send (uint8_t* DataArray);
+
+//==============================================================================
 /** Creates and sends a UART MIDI message.
  
  @param DataArray        the array of data that needs to be sent as a UART MIDI message
  */
-void MIDI_Send_Uart_Midi (uint8_t* DataArray);
+void MIDI_UART_Send (uint8_t* DataArray);
 
 //==============================================================================
 /** Creates and sends a USB MIDI message.
  
  @param DataArray        the array of data that needs to be sent as a USB MIDI message
  */
-void MIDI_Send_Usb_Midi (uint8_t* DataArray);
+void MIDI_USB_Send (uint8_t* DataArray);
 
-void MIDI_Uart_Put (char s);
+void MIDI_UART_Put (char s);
 
 #endif// __MIDI_H__

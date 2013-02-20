@@ -5,6 +5,7 @@ import subprocess
 import os
 import datetime
 import time
+import bitarray
 from pylab import *
 
 try:
@@ -51,74 +52,54 @@ def bin(x, digits=0):
     binstring = [oct2bin[int(n)] for n in oct(x)]
     return ''.join(binstring).lstrip('0').zfill(digits) 
 
+def tobits(s):
+    result = []
+    for c in s:
+        bits = bin(ord(c))[2:]
+        bits = '00000000'[len(bits):] + bits
+        result.extend([int(b) for b in bits])
+    return result
+
+def frombits(bits):
+    chars = []
+    for b in range(len(bits) / 10):
+        chunk = bits[b*10:(b+1)*10 - 1]
+        print int("".join([str(a) for a in bits]), 2)
+
 
 data = [] 
 velocities = [0] * 48
+prev_report = 0
 try:
-    #counter = 0;
     while 1:
-        report = h.read(5)
-        print report
-        print bin(report[4], 8)
-        #if report[0] == 0x01:
-        #    for i in range(report[1]):
-        #        decoded = (report[(i*4)+2], struct.unpack("h", "".join(map(chr, report[(i*4) + 3:(i*4) + 5])))[0], report[(i*4) + 5]) 
-        #        if decoded[0] in look_at_pad:
-        #            print decoded
-        ###try:
-        #if report[0] == 0x01:
-        #    decoded = (report[1], struct.unpack("h", "".join(map(chr, report[2:4])))[0], report[4]) 
-        #    if report[1] in look_at_pad:
-        #        print decoded
-
-        #for i in range(1, 145, 3):
-        #    pad = i / 3
-        #    value = struct.unpack("h", "".join(map(chr, report[i:i+2])))[0]
-        #    velocity = report[i+2]
-        #    velocities[pad] = (velocity, pad)
-
-        #    print pad, value, velocity
-
-            #if (velocity != 0):
-            #    velocities[pad] = report[i+2]
-            #print pad, value, velocities[pad]
-                #decoded = (report[1], struct.unpack("h", "".join(map(chr, report[i + 2: i + 4])))[0], report[i + 3]) 
-
-
-            #for char in report[1:256]:
-            #    if char !=0:
-            #        print char
-
-            #if report[1] in look_at_pad:
-            #    #if decoded[2] != 0:
-            #    data.append(decoded[1])
-            #    print decoded
-                #print bin(decoded[2], 8), decoded
-        #if report[0] == 0x04:
-        #    for i in range(2, len(report)-1, 2):
-        #        #print report[i:i+2]
-        #        decoded = struct.unpack("h", "".join(map(chr, report[i:i+2])))[0]
-        #        data.append(-decoded)
-        #    print average(data)
-        #    #plot(data)
-        #    #index = data.index(min(data))
-        #    #velo = min(data)
-        #    #if index > 80:
-        #    #    print -velo
+        report = h.read(98)
+        #print len(report)
+        if report[0] == 0x01:
+            for index, first_byte in enumerate(report[1:-1:2]):
+                second_byte = report[index * 2 + 2]
+                velocity = first_byte & 0x7F
+                pressure = first_byte >> 7 | second_byte
+                if (pressure > 0):
+                    print (index, pressure, velocity)
+                    print bin(report[97], 8)
+                elif (prev_report != report[97]):
+                    print bin(report[97], 8)
+                prev_report = report[97]
+        #    print report[1:3]
         #    data = []
+        #    for byte in report[1:2]:
+        #        l = [_ for _ in bin(byte, 8)]
+        #        l.reverse()
+        #        for b in l:
+        #            data.append(b)
+        #    print data
+        #    #print struct.unpack("h", "".join(map(chr, report[10:12])))[0] 
+        #    #data = []
+        #    #for byte in report[1:62]:
+        #    #    for s in bin(byte,8):
+        #    #        data.append(s)
+        #    #print data[0]
 
-
-        #except IndexError:
-        #    time.sleep(0.001)
-        #    pass
-        #f.write(str(decoded) + '\n')
-        #buf = [ 0x00, 0x06, 0x90, (counter & 0xFF), 0x00] 
-        #h.write(buf)
-        #buf = [ 0x00, 0x06, 0x80, (counter & 0xFF), 0x00] 
-        #h.write(buf)
-        #counter += 1
-        #if (counter > 127):
-        #    counter = 0;
 except KeyboardInterrupt:
     print ""
     h.close();
