@@ -79,12 +79,16 @@ try:
                 second_byte = report[index * 2 + 2]
                 velocity = first_byte & 0x7F
                 pressure = first_byte >> 7 | second_byte
-                if (pressure > 0):
-                    print (index, pressure, velocity)
-                    print bin(report[97], 8)
-                elif (prev_report != report[97]):
-                    print bin(report[97], 8)
-                prev_report = report[97]
+                #if (pressure > 0):
+                print (index, pressure, velocity)
+                #    print bin(report[97], 8)
+                #elif (prev_report != report[97]):
+                #    print bin(report[97], 8)
+                #prev_report = report[97]
+                
+
+
+
         #    print report[1:3]
         #    data = []
         #    for byte in report[1:2]:
