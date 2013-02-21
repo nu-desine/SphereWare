@@ -128,3 +128,76 @@ void ButtonsAndDials_Read(uint8_t pad)
             break;
     }
 }
+
+bool _SelfTest_Record(uint8_t button_or_dial, uint8_t value)
+{
+}
+
+
+
+void ButtonsAndDials_Test(uint8_t pad)
+{
+    //the MUX for the elite buttons and rotary encoders is on the same 
+    //MUX_A,B,C lines as the pads MUXs but it's always selected (INH tied to GND)
+    uint8_t elite_mux_num = pad & 0b111;
+
+    switch (elite_mux_num)
+    {
+        case SW2:
+            button_1 = !(((PIND >> PD6)) & 1);
+            if (button_1 != prev_button_1)
+            {
+                _SelfTest_Record(0, button_1);
+                prev_button_1 = button_1;
+            }
+            break;
+        case SW3:
+            button_2 = !(((PIND >> PD6)) & 1);
+            if (button_2 != prev_button_2)
+            {
+                _SelfTest_Record(1, button_2);
+                prev_button_2 = button_2;
+            }
+            break;
+        case SW4:
+            button_3 = !(((PIND >> PD6)) & 1);
+            if (button_3 != prev_button_3)
+            {
+                _SelfTest_Record(2, button_3);
+                prev_button_3 = button_3;
+            }
+            break;
+        case ENC1B:
+            {
+                uint8_t pins = PIND;
+                enc1_encoded =  ((pins >> PD6) & 1) << 1 | (pins & 1);
+                if (enc1_encoded != prev_enc1_encoded)
+                {
+                    enc1 = read_encoder_1(enc1_encoded);
+                    if ((enc1 > 0) && (enc1 != prev_enc1))
+                    {
+                        _SelfTest_Record(3, enc1);
+                    }
+                    prev_enc1 = enc1;
+                    prev_enc1_encoded = enc1_encoded;
+                }
+            }
+            break;
+        case ENC2B:
+            {
+                uint8_t pins = PIND;
+                enc2_encoded =  ((pins >> PD6) & 1) << 1 | ((pins >> PD1) & 1);
+                if (enc2_encoded != prev_enc2_encoded)
+                {
+                    enc2 = read_encoder_2(enc2_encoded);
+                    if ((enc2 > 0) && (enc2 != prev_enc2))
+                    {
+                        _SelfTest_Record(4, enc2);
+                    }
+                    prev_enc2 = enc2;
+                    prev_enc2_encoded = enc2_encoded;
+                }
+            }
+            break;
+    }
+}
