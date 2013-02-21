@@ -337,10 +337,44 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
        holding the report sent from the host.
        */
 
-    // Received a MIDI message report
-    if (DataArray[0] == 0x06) 
+    
+    if (DataArray[0] == 0x01) 
     {
-        MIDI_Send(DataArray);
+        int noOfMessages = DataArray[1];
+        
+//        // change the LEDs
+//        int led_channels[NUM_OF_LEDS][3];
+//        for (int j = 0; j < NUM_OF_LEDS; ++j)
+//        {
+//            led_channels[j][0] = 0;
+//            led_channels[j][1] = 0;
+//            led_channels[j][2] = 10*noOfMessages;
+//        }
+//        LED_WriteArray(led_channels);
+                
+        //decode each message within the HID report
+        for (int i = 0; i < noOfMessages; i++)
+        {
+            //get the first byte index of the message
+            int messageIndex  = (i * 4) + 2;
+            
+            //==== MIDI Message ====
+            if (DataArray[messageIndex] == 0)
+            {
+                
+//                //uint8_t* message = DataArray[messageIndex+1];
+//                
+//                uint8_t* message;
+//                message[0] = 0;
+//                message[1] = 144;
+//                message[2] = 60;
+//                message[3] = 110;
+//                
+//                MIDI_Send(message);
+            }
+  
+        }
+
     }
 }
 
