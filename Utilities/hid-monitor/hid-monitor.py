@@ -1,11 +1,6 @@
 import hid
 import struct
 import sys
-import subprocess 
-import os
-import datetime
-import time
-from pylab import *
 
 try:
     look_at_pad = sys.argv[1].split(":")
@@ -59,7 +54,6 @@ try:
     while 1:
         report = h.read(5)
         print report
-        print bin(report[4], 8)
         #if report[0] == 0x01:
         #    for i in range(report[1]):
         #        decoded = (report[(i*4)+2], struct.unpack("h", "".join(map(chr, report[(i*4) + 3:(i*4) + 5])))[0], report[(i*4) + 5]) 
