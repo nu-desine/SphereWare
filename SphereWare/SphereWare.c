@@ -73,7 +73,7 @@ void Calibrate (uint8_t* r2r_value_array)
         {
             R2R_Write(i);
             _delay_ms(1);
-            val = ADC_Read(DIFF_0_X10, ADC4);
+            val = ADC_Read(DIFF_1_X10, ADC4);
 
             if (val < 40)
             {
@@ -88,7 +88,7 @@ void Calibrate (uint8_t* r2r_value_array)
 
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
     {
-        val = ADC_Read(DIFF_0_X10, ADC4);
+        val = ADC_Read(DIFF_1_X10, ADC4);
         if (val < 10)
             r2r_value_array[pad]--;
     }
@@ -155,7 +155,7 @@ int main(void)
                 MUX_Select(pad);
                 R2R_Write(r2r_values[pad]);
                 ButtonsAndDials_Read(pad);
-                val = ADC_Read(DIFF_0_X10, ADC4);
+                val = ADC_Read(DIFF_1_X10, ADC4);
                 //if (pad == LOOK_AT_PAD)
                 //    GenericHID_Write_PadData(pad, val, val);
                 if (val < 0)
@@ -164,7 +164,7 @@ int main(void)
                     {
                         for (int i = 0; i < 200; ++i)
                         {
-                            val = ADC_Read(DIFF_0_X10, ADC4);
+                            val = ADC_Read(DIFF_1_X10, ADC4);
                             if (val < peak[pad])
                             {
                                 peak[pad] = val;
