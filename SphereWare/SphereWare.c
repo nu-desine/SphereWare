@@ -96,6 +96,12 @@ void Calibrate (uint8_t* r2r_value_array)
         
 }
 
+//interrupt callback
+ISR(TIMER1_COMPA_vect)
+{
+    GenericHID_Task();
+    USB_USBTask();
+} 
 
 
 /** Main program entry point. This routine configures the hardware required by the application, then
@@ -151,7 +157,7 @@ int main(void)
                 ButtonsAndDials_Read(pad);
                 val = ADC_Read(DIFF_0_X10, ADC4);
                 //if (pad == LOOK_AT_PAD)
-                //    HidInReports_Create_Pad_Report(pad, val, val);
+                //    GenericHID_Write_PadData(pad, val, val);
                 if (val < 0)
                 {
                     if (velocity[pad] == 0)
@@ -168,7 +174,7 @@ int main(void)
                         {
                             velocity[pad] = -peak[pad] >> 2;
                             //if (pad == LOOK_AT_PAD)
-                            HidInReports_Create_Pad_Report(pad, -peak[pad], velocity[pad]);
+                            GenericHID_Write_PadData(pad, -peak[pad], velocity[pad]);
                             prev_val[pad] = -peak[pad];
                             peak[pad] = 0;
                         }
@@ -180,7 +186,7 @@ int main(void)
                         {
                             if (val == 510)
                                 val = 511;
-                            HidInReports_Create_Pad_Report(pad, val, velocity[pad]);
+                            GenericHID_Write_PadData(pad, val, velocity[pad]);
                             prev_val[pad] = val;
                         }
                     }
@@ -189,7 +195,7 @@ int main(void)
                 {
                     if (velocity[pad] != 0)
                     {
-                        HidInReports_Create_Pad_Report(pad, 0, 0);
+                        GenericHID_Write_PadData(pad, 0, 0);
                         prev_val[pad] = 0;
                     }
                     velocity[pad] = 0;
@@ -224,18 +230,26 @@ void SetupHardware(void)
 
     /* Hardware Initialization */
     USB_Init();
+    MUX_Init();
     LED_Init();
     ADC_Init();
     R2R_Init();
     MIDI_Init();
     ButtonsAndDials_Init();
 
-    //PE2 button as input pulled high
+    //PE2, reset button (SW1) as input pulled high
     DDRE |= (1 << PE2);
     PORTE |= (1 << PE2);
 
-    MUX_Init();
+    // enable interrupt for USB and HID tasks
+    TCCR1B |= (1 << WGM12); // Configure timer 1 for CTC mode 
+    TIMSK1 |= (1 << OCIE1A); // Enable CTC interrrupt
+
+    OCR1AL = 250; // Set CTC compare to 1000Hz for 16Mhz/64
+    TCCR1B |= ((1 << CS10) | (1 << CS11)); // Start timer at Fcpu/64 
 }
+
+
 
 /** Event handler for the USB_Connect event. Starts the library USB task to begin the 
  * enumeration and USB management process.
@@ -326,14 +340,7 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
     // Received a MIDI message report
     if (DataArray[0] == 0x06) 
     {
-        MIDI_Send_Usb_Midi (DataArray);
-        MIDI_Send_Uart_Midi (DataArray);
-    }
-
-    // Received a host setup data request report
-    else if (DataArray[0] == 0x05) 
-    {
-        HidInReports_Create_Host_Setup_Report (1, 0);
+        MIDI_Send(DataArray);
     }
 }
 

@@ -53,7 +53,7 @@
         #include "LED.h"
         #include "MUX.h"
         #include "MIDI.h"
-        #include "HidInReports.h"
+        #include "GenericHID.h"
         #include "ButtonsAndDials.h"
 
         #include <math.h>
