@@ -83,7 +83,7 @@ void Calibrate (uint8_t* r2r_value_array)
         }
         //keep the USB connection alive
         USB_USBTask();
-        HID_Task();
+        //HID_Task();
     }
 
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
@@ -210,7 +210,7 @@ int main(void)
                 //}
 
                 USB_USBTask();
-                HID_Task();
+                //HID_Task();
             }
 
         }
@@ -336,46 +336,6 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
        function is called each time the host has sent a new report. DataArray is an array
        holding the report sent from the host.
        */
-
-    
-    if (DataArray[0] == 0x01) 
-    {
-        int noOfMessages = DataArray[1];
-        
-//        // change the LEDs
-//        int led_channels[NUM_OF_LEDS][3];
-//        for (int j = 0; j < NUM_OF_LEDS; ++j)
-//        {
-//            led_channels[j][0] = 0;
-//            led_channels[j][1] = 0;
-//            led_channels[j][2] = 10*noOfMessages;
-//        }
-//        LED_WriteArray(led_channels);
-                
-        //decode each message within the HID report
-        for (int i = 0; i < noOfMessages; i++)
-        {
-            //get the first byte index of the message
-            int messageIndex  = (i * 4) + 2;
-            
-            //==== MIDI Message ====
-            if (DataArray[messageIndex] == 0)
-            {
-                
-//                //uint8_t* message = DataArray[messageIndex+1];
-//                
-//                uint8_t* message;
-//                message[0] = 0;
-//                message[1] = 144;
-//                message[2] = 60;
-//                message[3] = 110;
-//                
-//                MIDI_Send(message);
-            }
-  
-        }
-
-    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
@@ -393,30 +353,6 @@ void CreateGenericHIDReport(uint8_t* DataArray)
 
 void HID_Task(void)
 {
-    /* Device must be connected and configured for the task to run */
-    if (USB_DeviceState != DEVICE_STATE_Configured)
-        return;
 
-    Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
-
-    /* Check to see if a packet has been sent from the host */
-    if (Endpoint_IsOUTReceived())
-    {
-        /* Check to see if the packet contains data */
-        if (Endpoint_IsReadWriteAllowed())
-        {
-            /* Create a temporary buffer to hold the read in report from the host */
-            uint8_t GenericData[GENERIC_REPORT_SIZE];
-
-            /* Read Generic Report Data */
-            Endpoint_Read_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-
-            /* Process Generic Report Data */
-            ProcessGenericHIDReport(GenericData);
-        }
-
-        /* Finalize the stream transfer to send the last packet */
-        Endpoint_ClearOUT();
-    }
 }
 
