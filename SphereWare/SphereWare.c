@@ -83,7 +83,7 @@ void Calibrate (uint8_t* r2r_value_array)
         }
         //keep the USB connection alive
         USB_USBTask();
-        HID_Task();
+        //HID_Task();
     }
 
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
@@ -210,7 +210,7 @@ int main(void)
                 //}
 
                 USB_USBTask();
-                HID_Task();
+                //HID_Task();
             }
 
         }
@@ -336,12 +336,6 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
        function is called each time the host has sent a new report. DataArray is an array
        holding the report sent from the host.
        */
-
-    // Received a MIDI message report
-    if (DataArray[0] == 0x06) 
-    {
-        MIDI_Send(DataArray);
-    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
@@ -359,30 +353,6 @@ void CreateGenericHIDReport(uint8_t* DataArray)
 
 void HID_Task(void)
 {
-    /* Device must be connected and configured for the task to run */
-    if (USB_DeviceState != DEVICE_STATE_Configured)
-        return;
 
-    Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
-
-    /* Check to see if a packet has been sent from the host */
-    if (Endpoint_IsOUTReceived())
-    {
-        /* Check to see if the packet contains data */
-        if (Endpoint_IsReadWriteAllowed())
-        {
-            /* Create a temporary buffer to hold the read in report from the host */
-            uint8_t GenericData[GENERIC_REPORT_SIZE];
-
-            /* Read Generic Report Data */
-            Endpoint_Read_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-
-            /* Process Generic Report Data */
-            ProcessGenericHIDReport(GenericData);
-        }
-
-        /* Finalize the stream transfer to send the last packet */
-        Endpoint_ClearOUT();
-    }
 }
 
