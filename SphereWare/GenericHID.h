@@ -3,6 +3,7 @@
 
 #include "Descriptors.h"
 #include "Config/AppConfig.h"
+#include "MIDI.h"
 //#include <LUFA/Drivers/USB/USB.h>
 
 void GenericHID_Task(void);
