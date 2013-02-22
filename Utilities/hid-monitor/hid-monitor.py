@@ -85,7 +85,13 @@ try:
                 #elif (prev_report != report[97]):
                 #    print bin(report[97], 8)
                 #prev_report = report[97]
-                
+        elif report[0] == 0x02:
+            for index, first_byte in enumerate(report[1:-1:2]):
+                if index in look_at_pad:
+                    second_byte = report[index * 2 + 2]
+                    value = first_byte | (second_byte << 8)
+                    #if (pressure > 0):
+                    print (index, value)
 
 
 

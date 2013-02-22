@@ -56,7 +56,7 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 47 
+#define LAST_PAD 48 
 #define LOOK_AT_PAD 0
 
 
@@ -112,7 +112,6 @@ int main(void)
 
     bool led_on = true;
     int led_channels[NUM_OF_LEDS][3];
-    int16_t val = 0;
     int16_t peak[LAST_PAD+1];
     uint8_t r2r_values[LAST_PAD+1];
     uint8_t velocity[LAST_PAD+1];
@@ -133,86 +132,25 @@ int main(void)
 
     LED_WriteArray(led_channels);
 
-    Calibrate(r2r_values);
-
     MUX_Select(FIRST_PAD);
     R2R_Write(r2r_values[FIRST_PAD]);
     _delay_us(90);
 
     while (1) 
     {
+
         MUX_Select(FIRST_PAD);
         R2R_Write(r2r_values[FIRST_PAD]);
         _delay_us(50);
+        
 
-        for (int row = 0; row < 6; ++row)
+        for (uint8_t pad = 0; pad <= LAST_PAD; ++pad) 
         {
-            MUX_Select(row << 3);
-            _delay_us(50);
-            for (int i = 0; i < 8; ++i)
-            {
-                uint8_t pad = row << 3 | i;
-                MUX_Select(pad);
-                R2R_Write(r2r_values[pad]);
-                ButtonsAndDials_Read(pad);
-                val = ADC_Read(DIFF_1_X10, ADC4);
-                //if (pad == LOOK_AT_PAD)
-                //    GenericHID_Write_PadData(pad, val, val);
-                if (val < 0)
-                {
-                    if (velocity[pad] == 0)
-                    {
-                        for (int i = 0; i < 200; ++i)
-                        {
-                            val = ADC_Read(DIFF_1_X10, ADC4);
-                            if (val < peak[pad])
-                            {
-                                peak[pad] = val;
-                            }
-                        }
-                        if ((-peak[pad] >> 2) > 0)
-                        {
-                            velocity[pad] = -peak[pad] >> 2;
-                            //if (pad == LOOK_AT_PAD)
-                            GenericHID_Write_PadData(pad, -peak[pad], velocity[pad]);
-                            prev_val[pad] = -peak[pad];
-                            peak[pad] = 0;
-                        }
-                    }
-                    else
-                    {
-                        val = (-val + prev_val[pad]) >> 1;
-                        if (val != prev_val[pad])
-                        {
-                            if (val == 510)
-                                val = 511;
-                            GenericHID_Write_PadData(pad, val, velocity[pad]);
-                            prev_val[pad] = val;
-                        }
-                    }
-                }
-                else
-                {
-                    if (velocity[pad] != 0)
-                    {
-                        GenericHID_Write_PadData(pad, 0, 0);
-                        prev_val[pad] = 0;
-                    }
-                    velocity[pad] = 0;
-                    sample_count[pad] = 0;
-                    peak[pad] = 0;
-                }
-
-                //if (pad < LAST_PAD)
-                //{
-                //    MUX_Select(pad+1);
-                //    R2R_Write(r2r_values[pad+1]);
-                //}
-
-                USB_USBTask();
-                //HID_Task();
-            }
-
+            MUX_Select(8);
+            R2R_Write(r2r_values[pad]);
+            ButtonsAndDials_Read(pad);
+            int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+            GenericHID_Write_DebugData(pad, val);
         }
 
     }
@@ -290,39 +228,40 @@ void EVENT_USB_Device_ConfigurationChanged(void)
  */
 void EVENT_USB_Device_ControlRequest(void)
 {
-    /* Handle HID Class specific requests */
-    switch (USB_ControlRequest.bRequest)
-    {
-        case HID_REQ_GetReport:
-            if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
-            {
-                uint8_t GenericData[GENERIC_REPORT_SIZE];
-                CreateGenericHIDReport(GenericData);
 
-                Endpoint_ClearSETUP();
+    ///* Handle HID Class specific requests */
+    //switch (USB_ControlRequest.bRequest)
+    //{
+    //    case HID_REQ_GetReport:
+    //        if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
+    //        {
+    //            uint8_t GenericData[GENERIC_REPORT_SIZE];
+    //            CreateGenericHIDReport(GenericData);
 
-                /* Write the report data to the control endpoint */
-                Endpoint_Write_Control_Stream_LE(&GenericData, sizeof(GenericData));
-                Endpoint_ClearOUT();
-            }
+    //            Endpoint_ClearSETUP();
 
-            break;
-        case HID_REQ_SetReport:
-            if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
-            {
-                uint8_t GenericData[GENERIC_REPORT_SIZE];
+    //            /* Write the report data to the control endpoint */
+    //            Endpoint_Write_Control_Stream_LE(&GenericData, sizeof(GenericData));
+    //            Endpoint_ClearOUT();
+    //        }
 
-                Endpoint_ClearSETUP();
+    //        break;
+    //    case HID_REQ_SetReport:
+    //        if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
+    //        {
+    //            uint8_t GenericData[GENERIC_REPORT_SIZE];
 
-                /* Read the report data from the control endpoint */
-                Endpoint_Read_Control_Stream_LE(&GenericData, sizeof(GenericData));
-                Endpoint_ClearIN();
+    //            Endpoint_ClearSETUP();
 
-                ProcessGenericHIDReport(GenericData);
-            }
+    //            /* Read the report data from the control endpoint */
+    //            Endpoint_Read_Control_Stream_LE(&GenericData, sizeof(GenericData));
+    //            Endpoint_ClearIN();
 
-            break;
-    }
+    //            ProcessGenericHIDReport(GenericData);
+    //        }
+
+    //        break;
+    //}
 }
 
 /** Function to process the last received report from the host.
