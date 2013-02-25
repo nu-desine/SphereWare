@@ -73,9 +73,9 @@ void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
         {
             R2R_Write(i);
             _delay_ms(1);
-            val = ADC_Read(DIFF_0_X10, ADC4);
+            val = ADC_Read(DIFF_1_X10, ADC4);
 
-            if (val < 500)
+            if (val < 400)
             {
                 r2r_value_array[pad] = i;
                 init_value_array[pad] = val;
@@ -86,7 +86,7 @@ void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
 
     //for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
     //{
-    //    val = ADC_Read(DIFF_0_X10, ADC4);
+    //    val = ADC_Read(DIFF_1_X1, ADC4);
     //    if (val < 10)
     //        r2r_value_array[pad]--;
     //}
@@ -152,8 +152,22 @@ int main(void)
                 _delay_us(100);
             _delay_us(100);
             ButtonsAndDials_Read(pad);
-            int16_t val = ADC_Read(DIFF_0_X10, ADC4);
-            GenericHID_Write_DebugData(pad, val - init_val[pad]);
+            int16_t val = ADC_Read(DIFF_1_X10, ADC4);
+
+            if (val <= -480)
+            {
+                val = -(-ADC_Read(DIFF_1_X1, ADC4) - 48 + 480);
+            }
+
+            if (val < -800)
+                val = -800;
+
+            val -= init_val[pad];
+
+            if (val > 0)
+                val = 0;
+
+            GenericHID_Write_DebugData(pad, val);
         }
 
     }
