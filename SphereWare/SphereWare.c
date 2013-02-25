@@ -56,12 +56,12 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 48 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_value_array)
+void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
 {
     int16_t val;
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
@@ -75,9 +75,10 @@ void Calibrate (uint8_t* r2r_value_array)
             _delay_ms(1);
             val = ADC_Read(DIFF_0_X10, ADC4);
 
-            if (val < 40)
+            if (val < 500)
             {
                 r2r_value_array[pad] = i;
+                init_value_array[pad] = val;
                 break;
             }
         }
@@ -113,13 +114,13 @@ int main(void)
     uint8_t r2r_values[LAST_PAD+1];
     uint8_t velocity[LAST_PAD+1];
     uint8_t sample_count[LAST_PAD+1];
-    int16_t prev_val[LAST_PAD+1];
+    int16_t init_val[LAST_PAD+1];
 
     SetupHardware();
 
     sei();
 
-    Calibrate(r2r_values);
+    Calibrate(r2r_values, init_val);
 
     // turn LED blue
     for (int i = 0; i < NUM_OF_LEDS; ++i)
@@ -147,10 +148,12 @@ int main(void)
         {
             MUX_Select(pad);
             R2R_Write(r2r_values[pad]);
-            _delay_us(50);
+            if (!(pad % 8))
+                _delay_us(100);
+            _delay_us(100);
             ButtonsAndDials_Read(pad);
             int16_t val = ADC_Read(DIFF_0_X10, ADC4);
-            GenericHID_Write_DebugData(pad, val);
+            GenericHID_Write_DebugData(pad, val - init_val[pad]);
         }
 
     }
