@@ -67,12 +67,53 @@ int main(void)
 
     for (;;)
     {
+        uint8_t midi_data[4] = {0 , 0x90, 60, 127};
+        // turn LED blue
+        int led_channels[NUM_OF_LEDS][3];
+
+        for (int i = 0; i < NUM_OF_LEDS; ++i)
+        {
+            led_channels[i][0] = 0;
+            led_channels[i][1] = 0;
+            led_channels[i][2] = 1023;
+        }
+        LED_WriteArray(led_channels);
 
         if (!bit_is_set(PINE, PE2))
             BootJump_Jump_To_Bootloader();
 
-        HID_Task();
-        USB_USBTask();
+
+        MIDI_Send_Uart_Midi(midi_data);
+        MIDI_Send_Usb_Midi(midi_data);
+
+        for (int i = 0; i < 1000; ++i)
+        {
+            HID_Task();
+            USB_USBTask();
+            _delay_ms(1);
+        }
+        // turn LED red
+
+        for (int i = 0; i < NUM_OF_LEDS; ++i)
+        {
+            led_channels[i][0] = 1023;
+            led_channels[i][1] = 0;
+            led_channels[i][2] = 0;
+        }
+        LED_WriteArray(led_channels);
+
+        midi_data[1] = 0x80;
+
+        MIDI_Send_Uart_Midi(midi_data);
+        MIDI_Send_Usb_Midi(midi_data);
+
+        for (int i = 0; i < 1000; ++i)
+        {
+            HID_Task();
+            USB_USBTask();
+            _delay_ms(1);
+        }
+
     }
 }
 
@@ -197,7 +238,7 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
     if (DataArray[0] == 0x06) 
     {
         MIDI_Send_Usb_Midi (DataArray);
-        MIDI_Send_Uart_Midi (DataArray);
+        //MIDI_Send_Uart_Midi (DataArray);
     }
 }
 
