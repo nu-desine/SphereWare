@@ -89,7 +89,8 @@ try:
             for index, first_byte in enumerate(report[1:-1:2]):
                 if index in look_at_pad:
                     second_byte = report[index * 2 + 2]
-                    value = first_byte | (second_byte << 8)
+                    #value = first_byte | (second_byte << 8)
+                    value = struct.unpack("h", "".join(map(chr, [first_byte, second_byte])))[0] 
                     #if (pressure > 0):
                     print (index, value)
 

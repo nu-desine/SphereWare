@@ -73,7 +73,7 @@ void Calibrate (uint8_t* r2r_value_array)
         {
             R2R_Write(i);
             _delay_ms(1);
-            val = ADC_Read(DIFF_1_X10, ADC4);
+            val = ADC_Read(DIFF_0_X10, ADC4);
 
             if (val < 40)
             {
@@ -81,17 +81,14 @@ void Calibrate (uint8_t* r2r_value_array)
                 break;
             }
         }
-        //keep the USB connection alive
-        USB_USBTask();
-        //HID_Task();
     }
 
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-    {
-        val = ADC_Read(DIFF_1_X10, ADC4);
-        if (val < 10)
-            r2r_value_array[pad]--;
-    }
+    //for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    //{
+    //    val = ADC_Read(DIFF_0_X10, ADC4);
+    //    if (val < 10)
+    //        r2r_value_array[pad]--;
+    //}
 
         
 }
@@ -122,6 +119,8 @@ int main(void)
 
     sei();
 
+    Calibrate(r2r_values);
+
     // turn LED blue
     for (int i = 0; i < NUM_OF_LEDS; ++i)
     {
@@ -148,8 +147,9 @@ int main(void)
         {
             MUX_Select(pad);
             R2R_Write(r2r_values[pad]);
+            _delay_us(50);
             ButtonsAndDials_Read(pad);
-            int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+            int16_t val = ADC_Read(DIFF_0_X10, ADC4);
             GenericHID_Write_DebugData(pad, val);
         }
 
