@@ -146,7 +146,7 @@ int main(void)
 
         for (uint8_t pad = 0; pad <= LAST_PAD; ++pad) 
         {
-            MUX_Select(8);
+            MUX_Select(pad);
             R2R_Write(r2r_values[pad]);
             ButtonsAndDials_Read(pad);
             int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
