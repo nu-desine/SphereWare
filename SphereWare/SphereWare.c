@@ -56,12 +56,12 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 48 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_value_array)
+void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
 {
     int16_t val;
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
@@ -75,23 +75,21 @@ void Calibrate (uint8_t* r2r_value_array)
             _delay_ms(1);
             val = ADC_Read(DIFF_1_X10, ADC4);
 
-            if (val < 40)
+            if (val < 400)
             {
                 r2r_value_array[pad] = i;
+                init_value_array[pad] = val;
                 break;
             }
         }
-        //keep the USB connection alive
-        USB_USBTask();
-        //HID_Task();
     }
 
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-    {
-        val = ADC_Read(DIFF_1_X10, ADC4);
-        if (val < 10)
-            r2r_value_array[pad]--;
-    }
+    //for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    //{
+    //    val = ADC_Read(DIFF_1_X1, ADC4);
+    //    if (val < 10)
+    //        r2r_value_array[pad]--;
+    //}
 
         
 }
@@ -116,11 +114,13 @@ int main(void)
     uint8_t r2r_values[LAST_PAD+1];
     uint8_t velocity[LAST_PAD+1];
     uint8_t sample_count[LAST_PAD+1];
-    int16_t prev_val[LAST_PAD+1];
+    int16_t init_val[LAST_PAD+1];
 
     SetupHardware();
 
     sei();
+
+    Calibrate(r2r_values, init_val);
 
     // turn LED blue
     for (int i = 0; i < NUM_OF_LEDS; ++i)
@@ -148,8 +148,25 @@ int main(void)
         {
             MUX_Select(pad);
             R2R_Write(r2r_values[pad]);
+            if (!(pad % 8))
+                _delay_us(100);
+            _delay_us(100);
             ButtonsAndDials_Read(pad);
-            int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+            int16_t val = ADC_Read(DIFF_1_X10, ADC4);
+
+            if (val <= -480)
+            {
+                val = -(-ADC_Read(DIFF_1_X1, ADC4) - 48 + 480);
+            }
+
+            if (val < -800)
+                val = -800;
+
+            val -= init_val[pad];
+
+            if (val > 0)
+                val = 0;
+
             GenericHID_Write_DebugData(pad, val);
         }
 
