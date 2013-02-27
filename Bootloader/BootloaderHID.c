@@ -146,7 +146,6 @@ static void SetupHardware(void)
     LED_Init();
 
     //PE2 button as input pulled high
-    DDRE |= (1 << PE2);
     PORTE |= (1 << PE2);
 }
 
