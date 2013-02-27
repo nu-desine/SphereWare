@@ -153,7 +153,7 @@ int main(void)
                 _delay_us(100);
             _delay_us(100);
             ButtonsAndDials_Read(pad);
-            int16_t val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 40;
+            int16_t val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
 
             if (val > 0)
             {
@@ -163,7 +163,7 @@ int main(void)
                     int16_t peak = val;
                     for (int i = 0; i < 200; ++i)
                     {
-                        val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 40;
+                        val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
                         if (val > peak)
                         {
                             peak = val;
@@ -181,7 +181,7 @@ int main(void)
             {
                 if (velocity_sent[pad])
                 {
-                    GenericHID_Write_PadData(pad, 0, 0);
+                    //GenericHID_Write_PadData(pad, 0, 0);
                     velocity_sent[pad] = false;
                 }
             }

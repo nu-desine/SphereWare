@@ -71,6 +71,8 @@ def frombits(bits):
 data = {} 
 velocities = [0] * 48
 prev_report = 0
+
+triggered = []
 try:
     while 1:
         report = h.read(98)
@@ -81,6 +83,8 @@ try:
                 velocity = first_byte & 0x7F
                 pressure = (first_byte >> 7) | (second_byte << 1)
                 data[index] =  (pressure, velocity)
+                if velocity > 0:
+                    triggered.append((pad,velocity))
             for index in data:
                 sys.stdout.write("(%2i," % index)
                 sys.stdout.write("%3i," % data[index][0])
