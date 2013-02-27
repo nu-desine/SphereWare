@@ -113,22 +113,19 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
             //==== MIDI Message ====
             if (DataArray[messageIndex] == 0)
             {
-                uint8_t* message;
+                uint8_t message[4];
                 message[0] = 0x00;
                 message[1] = DataArray[messageIndex+1];
                 message[2] = DataArray[messageIndex+2];
                 message[3] = DataArray[messageIndex+3];
                 
-                //MIDI_Send(message);
-                
                 MIDI_Send_Usb_Midi (message);
-                //MIDI_Send_Uart_Midi (DataArray);
+                MIDI_Send_Uart_Midi (message);
             }
             
         }
         
     }
-
 
 }
 
