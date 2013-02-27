@@ -35,6 +35,11 @@ BOOT_SEC_OFFSET       = 0x$(shell echo "obase=16; (($(FLASH_SIZE_KB) * 1024) - $
 # Default target
 all:
 
+boot:
+	avrdude -p atmega32u4 -P usb -c avrisp2 -B 1 -U flash:w:BootloaderHID-1.0.hex:i -e
+
+
+
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
 include $(LUFA_PATH)/Build/lufa_sources.mk
