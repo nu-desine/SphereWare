@@ -18,7 +18,7 @@
 */
 #include "GenericHID.h"
 
-volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {2};
+volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 
 void GenericHID_Task(void)
 {
@@ -86,7 +86,7 @@ void GenericHID_Write_PadData (uint8_t pad_number, int16_t pad_value, uint8_t pa
 void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
 {
     cli(); //disable interrupts
-
+    hid_in_buffer[0] = 0x02;
     hid_in_buffer[1 + (pad_number * 2)] = pad_value & 0xFF;
     hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 8;
 

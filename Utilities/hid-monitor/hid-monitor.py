@@ -6,6 +6,7 @@ import os
 import datetime
 import time
 import bitarray
+import pprint
 from pylab import *
 
 try:
@@ -67,7 +68,7 @@ def frombits(bits):
         print int("".join([str(a) for a in bits]), 2)
 
 
-data = [] 
+data = {} 
 velocities = [0] * 48
 prev_report = 0
 try:
@@ -78,21 +79,35 @@ try:
             for index, first_byte in enumerate(report[1:-1:2]):
                 second_byte = report[index * 2 + 2]
                 velocity = first_byte & 0x7F
-                pressure = first_byte >> 7 | second_byte
-                #if (pressure > 0):
-                print (index, pressure, velocity)
-                #    print bin(report[97], 8)
-                #elif (prev_report != report[97]):
-                #    print bin(report[97], 8)
-                #prev_report = report[97]
+                pressure = (first_byte >> 7) | (second_byte << 1)
+                data[index] =  (pressure, velocity)
+            for index in data:
+                sys.stdout.write("(%2i," % index)
+                sys.stdout.write("%3i," % data[index][0])
+                sys.stdout.write("%3i)" % data[index][1])
+                sys.stdout.write("     ")
+                #if count > 5:
+                #    sys.stdout.write("\r\n")
+                #    count = 0
+            sys.stdout.write("\r\n")
         elif report[0] == 0x02:
             for index, first_byte in enumerate(report[1:-1:2]):
                 if index in look_at_pad:
                     second_byte = report[index * 2 + 2]
                     #value = first_byte | (second_byte << 8)
                     value = struct.unpack("h", "".join(map(chr, [first_byte, second_byte])))[0] 
-                    #if (pressure > 0):
-                    print (index, value)
+                    data[index] = value
+            count = 0
+            for index in data:
+                count += 1
+                sys.stdout.write("(%2i," % index)
+                sys.stdout.write("%5i)" % data[index])
+                sys.stdout.write("     ")
+                #if count > 5:
+                #    sys.stdout.write("\r\n")
+                #    count = 0
+                    
+            sys.stdout.write("\r\n")
 
 
 
