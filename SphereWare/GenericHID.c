@@ -83,9 +83,21 @@ void GenericHID_Write_PadData (uint8_t pad_number, int16_t pad_value, uint8_t pa
     sei(); //enable interrupts
 }
 
+void GenericHID_Write_PressureOnly (uint8_t pad_number, int16_t pad_value)
+{
+    cli(); //disable interrupts
+
+    hid_in_buffer[1 + (pad_number * 2)] &= 0x7F;
+    hid_in_buffer[1 + (pad_number * 2)] |= ((pad_value & 1) << 7);
+    hid_in_buffer[2 + (pad_number * 2)]  = pad_value >> 1;
+
+    sei(); //enable interrupts
+}
+
 void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
 {
     cli(); //disable interrupts
+
     hid_in_buffer[0] = 0x02;
     hid_in_buffer[1 + (pad_number * 2)] = pad_value & 0xFF;
     hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 8;

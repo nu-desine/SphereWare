@@ -9,7 +9,8 @@
 void GenericHID_Task(void);
 void GenericHID_Write_PadData(uint8_t pad_number, int16_t pad_value, uint8_t pad_velocity);
 void GenericHID_Write_ButtonDialData(uint8_t buttons, uint8_t dials);
-void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value);
+void GenericHID_Write_PressureOnly(uint8_t pad_number, int16_t pad_value);
+void GenericHID_Write_DebugData(uint8_t pad_number, int16_t pad_value);
 void GenericHID_ProcessReport(uint8_t* DataArray);
 
 #endif// __GENERICHID_H__ 
