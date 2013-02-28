@@ -56,7 +56,7 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 39 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
 
@@ -153,37 +153,39 @@ int main(void)
                 _delay_us(100);
             _delay_us(100);
             ButtonsAndDials_Read(pad);
-            int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 40;
+            int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 50;
 
             if (val > 0)
             {
-                if (!velocity_sent[pad])
-                {
-                    int16_t velocity;
-                    int16_t peak = val;
-                    for (int i = 0; i < 200; ++i)
-                    {
-                        val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 40;
-                        if (val > peak)
-                        {
-                            peak = val;
-                        }
-                    }
-                    velocity = peak >> 1;
-                    if (velocity > 127)
-                        velocity = 127;
-                    //GenericHID_Write_DebugData(pad, velocity);
-                    GenericHID_Write_PadData(pad, velocity, velocity);
-                    velocity_sent[pad] = true;
-                }
+                GenericHID_Write_PadData(pad, val, 100);
+                //if (!velocity_sent[pad])
+                //{
+                //    int16_t velocity;
+                //    int16_t peak = val;
+                //    for (int i = 0; i < 200; ++i)
+                //    {
+                //        val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 40;
+                //        if (val > peak)
+                //        {
+                //            peak = val;
+                //        }
+                //    }
+                //    velocity = peak >> 1;
+                //    if (velocity > 127)
+                //        velocity = 127;
+                //    //GenericHID_Write_DebugData(pad, velocity);
+                //    GenericHID_Write_PadData(pad, velocity, velocity);
+                //    velocity_sent[pad] = true;
+                //}
             }
             else
             {
-                if (velocity_sent[pad])
-                {
-                    GenericHID_Write_PadData(pad, 0, 0);
-                    velocity_sent[pad] = false;
-                }
+                GenericHID_Write_PadData(pad, 0, 0);
+                //if (velocity_sent[pad])
+                //{
+                //    GenericHID_Write_PadData(pad, 0, 0);
+                //    velocity_sent[pad] = false;
+                //}
             }
 
 
