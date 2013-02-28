@@ -78,7 +78,7 @@ void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
             if (val > -400)
             {
                 r2r_value_array[pad] = i;
-                init_value_array[pad] = val;
+                init_value_array[pad] = val + 50;
                 break;
             }
         }
@@ -153,7 +153,7 @@ int main(void)
                 _delay_us(100);
             _delay_us(100);
             ButtonsAndDials_Read(pad);
-            int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 40;
+            int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
 
             if (val > 0)
             {
@@ -163,7 +163,7 @@ int main(void)
                     int16_t peak = val;
                     for (int i = 0; i < 200; ++i)
                     {
-                        val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad] - 40;
+                        val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
                         if (val > peak)
                         {
                             peak = val;
@@ -193,7 +193,7 @@ int main(void)
             //    val = -(-ADC_Read(DIFF_1_X1, ADC4) - 48 + 480);
             //}
 
-            //val -= init_val[pad] - 40;
+            //val -= init_val[pad];
 
             ////if (val > 0)
             ////    val = 0;
