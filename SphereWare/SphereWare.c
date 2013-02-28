@@ -148,7 +148,7 @@ int main(void)
             R2R_Write(r2r_val[pad]);
             if (!(pad % 8))
                 _delay_us(200);
-            _delay_us(200);
+            _delay_us(250);
             ButtonsAndDials_Read(pad);
 
             if (pad < 40) 
@@ -183,7 +183,7 @@ int main(void)
                             val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
 
 
-                        filtered_val[pad] = ((filtered_val[pad] * 0.95) + (val * 0.05));
+                        filtered_val[pad] = ((filtered_val[pad] * 0.70) + (val * 0.30));
 
 
                         if (filtered_val[pad] > 511)
@@ -210,20 +210,20 @@ int main(void)
                     {
                         int16_t velocity;
                         int16_t peak = val;
-                        int num = 0;
-                        for (int i = 0; i < 200; ++i)
+                        for (int i = 0; i < 400; ++i)
                         {
                             val = -(ADC_Read(SINGLE_ENDED, ADC4) - init_val[pad]);
                             if (val > peak)
                             {
                                 peak = val;
-                                num = i;
                             }
                         }
                         velocity = peak * 2;
+
                         if (velocity > 127)
                             velocity = 127;
-                        GenericHID_Write_PadData(pad, num, velocity);
+
+                        GenericHID_Write_PadData(pad, velocity, velocity);
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                     }
@@ -235,7 +235,7 @@ int main(void)
                         if (filtered_val[pad] > 511)
                             filtered_val[pad] = 511;
 
-                        //GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
                     }
 
                 }
