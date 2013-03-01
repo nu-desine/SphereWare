@@ -84,16 +84,18 @@ try:
                 pressure = (first_byte >> 7) | (second_byte << 1)
                 data[index] =  (pressure, velocity)
                 if velocity > 0:
+                    print index, pressure, velocity
                     triggered.append((pad,velocity))
-            for index in data:
-                sys.stdout.write("(%2i," % index)
-                sys.stdout.write("%3i," % data[index][0])
-                sys.stdout.write("%3i)" % data[index][1])
-                sys.stdout.write("     ")
+            #for index in data:
+            #    if (dataindex[1] > 0):
+            #        sys.stdout.write("(%2i," % index)
+            #        sys.stdout.write("%3i," % data[index][0])
+            #        sys.stdout.write("%3i)" % data[index][1])
+            #        sys.stdout.write("     ")
                 #if count > 5:
                 #    sys.stdout.write("\r\n")
                 #    count = 0
-            sys.stdout.write("\r\n")
+            #sys.stdout.write("\r\n")
         elif report[0] == 0x02:
             for index, first_byte in enumerate(report[1:-1:2]):
                 if index in look_at_pad:
