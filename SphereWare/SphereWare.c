@@ -96,7 +96,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val, int16_t * init_val_single_
                 if (val > 40)
                 {
                     r2r_val[pad] = i;
-                    init_val[pad] = val + 50;
+                    init_val[pad] = val + 100;
                     break;
                 }
             }
@@ -157,8 +157,8 @@ int main(void)
             MUX_Select(pad);
             R2R_Write(r2r_val[pad]);
             if (!(pad % 8))
-                _delay_us(50);
-            _delay_us(50);
+                _delay_us(100);
+            _delay_us(100);
             ButtonsAndDials_Read(pad);
 
             if (pad < 40) 
