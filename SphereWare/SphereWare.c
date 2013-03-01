@@ -59,15 +59,19 @@
 #define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
+bool not_being_played[LAST_PAD+1];
+int16_t init_val[LAST_PAD+1];
+bool thresholds_raised = false;
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_val, int16_t * init_val, int16_t * init_val_single_ended)
+void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
 {
     int16_t val;
     for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
+        not_being_played[pad] = true;
         _delay_ms(1);
         if (pad < 40)
         {
@@ -113,6 +117,65 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val, int16_t * init_val_single_
 //interrupt callback
 ISR(TIMER1_COMPA_vect)
 {
+    static int count = 0;
+    bool none_played = true;
+
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    {
+        none_played &= not_being_played[pad];
+    }
+
+
+    if (none_played)
+    {
+        count++;
+        if (count > 20000)
+        {
+            count = 0;
+            //// turn LED red
+            //int led_channels[NUM_OF_LEDS][3];
+            //for (int i = 0; i < NUM_OF_LEDS; i++)
+            //{
+            //    led_channels[i][0] = 1023;
+            //    led_channels[i][1] = 0;
+            //    led_channels[i][2] = 0;
+            //}
+            //LED_WriteArray(led_channels);
+            if (!thresholds_raised)
+            {
+                for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+                {
+                    init_val[pad] += 100; 
+                }
+                thresholds_raised = true;
+            }
+
+        }
+
+    }
+    else
+    {
+            if (thresholds_raised)
+            {
+                for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+                {
+                    init_val[pad] -= 100; 
+                }
+                thresholds_raised = false;
+            }
+            count = 0;
+            //// turn LED blue
+            //int led_channels[NUM_OF_LEDS][3];
+            //for (int i = 0; i < NUM_OF_LEDS; i++)
+            //{
+            //    led_channels[i][0] = 0;
+            //    led_channels[i][1] = 0;
+            //    led_channels[i][2] = 1023;
+            //}
+            //LED_WriteArray(led_channels);
+    }
+
+
     GenericHID_Task();
     USB_USBTask();
 } 
@@ -127,7 +190,6 @@ int main(void)
     bool level_adjusted[LAST_PAD+1];
     int led_channels[NUM_OF_LEDS][3];
     uint8_t r2r_val[LAST_PAD+1];
-    int16_t init_val[LAST_PAD+1];
     int16_t init_val_se[LAST_PAD+1];
     int16_t filtered_val[LAST_PAD+1];
 
@@ -135,7 +197,7 @@ int main(void)
 
     sei();
 
-    Calibrate(r2r_val, init_val, init_val_se);
+    Calibrate(r2r_val, init_val_se);
 
     // turn LED blue
     for (int i = 0; i < NUM_OF_LEDS; i++)
@@ -156,9 +218,20 @@ int main(void)
         {
             MUX_Select(pad);
             R2R_Write(r2r_val[pad]);
-            if (!(pad % 8))
+
+            if (thresholds_raised)
+            {
+                if (!(pad % 8))
+                    _delay_ms(1);
+                _delay_ms(1);
+            }
+            else
+            {
+                if (!(pad % 8))
+                    _delay_us(100);
                 _delay_us(100);
-            _delay_us(100);
+            }
+
             ButtonsAndDials_Read(pad);
 
             if (pad < 40) 
@@ -187,6 +260,7 @@ int main(void)
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         init_val[pad] -= 50;
+                        not_being_played[pad] = false;
                     }
                     else if (velocity_sent[pad])
                     {
@@ -202,6 +276,7 @@ int main(void)
 
 
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        not_being_played[pad] = false;
                     }
 
                 }
@@ -210,6 +285,7 @@ int main(void)
                     GenericHID_Write_PadData(pad, 0, 0);
                     velocity_sent[pad] = false;
                     init_val[pad] += 50;
+                    not_being_played[pad] = true;
                 }
             }
             else // if pad >= 40
