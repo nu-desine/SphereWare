@@ -41,6 +41,12 @@ void GenericHID_Task(void)
             data[i] = hid_in_buffer[i + (flip * 64)];
         }
 
+        if (flip) //clear the dial data
+        {
+            hid_in_buffer[97] = 0; 
+            hid_in_buffer[98] = 0; 
+        }
+
         flip = !flip;
         
         /* Write Report Data */
@@ -105,11 +111,25 @@ void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
     sei(); //enable interrupts
 }
 
-void GenericHID_Write_ButtonDialData(uint8_t buttons, uint8_t dials) 
+void GenericHID_Write_ButtonDialData(uint8_t buttons_and_dials) 
 {
     cli(); //disable interrupts
 
-    hid_in_buffer[97] = ((buttons & 0b111) << 1) | (dials << 4) | 1; //TODO add elite detection and info
+    hid_in_buffer[97] = buttons_and_dials << 1 | 1;//((buttons & 0b111) << 1) | (dials << 4) | 1; //TODO add elite detection and info
+
+    sei(); //enable interrupts
+}
+
+
+void GenericHID_Adjust_Dial(uint8_t dial_number, int8_t amount, uint32_t state)
+{
+    cli(); //disable interrupts
+
+    hid_in_buffer[98 + dial_number] += amount;
+    hid_in_buffer[100] = state;
+    hid_in_buffer[101] = state >> 8;
+    hid_in_buffer[102] = state >> 16;
+    hid_in_buffer[103] = state >> 24;
 
     sei(); //enable interrupts
 }

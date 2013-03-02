@@ -71,11 +71,12 @@ def frombits(bits):
 data = {} 
 velocities = [0] * 48
 prev_report = 0
+prev_buttons_and_dials = 0;
 
 triggered = []
 try:
     while 1:
-        report = h.read(98)
+        report = h.read(104)
         #print len(report)
         if report[0] == 0x01:
             for index, first_byte in enumerate(report[1:-1:2]):
@@ -83,9 +84,19 @@ try:
                 velocity = first_byte & 0x7F
                 pressure = (first_byte >> 7) | (second_byte << 1)
                 data[index] =  (pressure, velocity)
-                if velocity > 0:
-                    print index, pressure, velocity
-                    triggered.append((pad,velocity))
+                #if velocity > 0:
+                    #print index, pressure, velocity
+                    #triggered.append((pad,velocity))
+            if (report[98] != prev_buttons_and_dials):
+                prev_buttons_and_dials = report[98]
+                if (report[98] > 240):
+                    print -(256 - report[98])
+                else:
+                    print report[98]
+                print bin(report[103], 8),
+                print bin(report[102], 8),
+                print bin(report[101], 8),
+                print bin(report[100], 8)
             #for index in data:
             #    if (dataindex[1] > 0):
             #        sys.stdout.write("(%2i," % index)

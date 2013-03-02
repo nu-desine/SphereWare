@@ -56,7 +56,7 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 47 
+#define LAST_PAD 39 
 #define LOOK_AT_PAD 0
 
 bool not_being_played[LAST_PAD+1];
@@ -210,6 +210,7 @@ int main(void)
     LED_WriteArray(led_channels);
 
     bool velocity_sent[LAST_PAD+1];
+    uint8_t buttons_and_dials;
 
     while (1) 
     {
@@ -232,6 +233,7 @@ int main(void)
                 _delay_us(100);
             }
 
+            not_being_played[pad] = false;
             ButtonsAndDials_Read(pad);
 
             if (pad < 40) 
@@ -337,9 +339,7 @@ int main(void)
                     velocity_sent[pad] = false;
                 }
             }
-
         }
-
     }
 }
 

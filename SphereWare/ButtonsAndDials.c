@@ -62,10 +62,12 @@ uint8_t read_encoder_2(uint8_t decoder_val)
       return 0;
 }
 
-void ButtonsAndDials_Read(uint8_t pad)
+uint8_t ButtonsAndDials_Read(uint8_t pad)
 {
     static uint8_t buttons = 0;
     static uint8_t dials   = 0;
+    static uint32_t dial_state[2] = {0, 0};
+    static int8_t dir = 0;
     //the MUX for the elite buttons and rotary encoders is on the same 
     //MUX_A,B,C lines as the pads MUXs but it's always selected (INH tied to GND)
     uint8_t elite_mux_num = pad & 0b111;
@@ -87,40 +89,132 @@ void ButtonsAndDials_Read(uint8_t pad)
         case ENC1B:
             {
                 uint8_t pins = PIND;
-                dials &= 0b00001100;
-                enc1_encoded =  ((pins >> PD6) & 1) << 1 | (pins & 1);
-                if (enc1_encoded != prev_enc1_encoded)
+                pins = ((pins >> PD6) & 1) << 1 | (pins & 1);
+                //if ((dial_state[0] & 0b11) != pins)
                 {
-                    enc1 = read_encoder_1(enc1_encoded);
-                    if ((enc1 > 0) && (enc1 != prev_enc1))
+                    dial_state[0] = ((dial_state[0] << 2) | pins);
+                    switch (dial_state[0] & 0xFF)
                     {
-                        dials |= enc1 & 0b11;
-                        //HidInReports_Create_Dial_Report(0, enc1);
+                        case 0b11111101:
+                            GenericHID_Adjust_Dial(0, 1, dial_state[0]);
+                            dir = 1;
+                            break;
+                        case 0b01111101:
+                        case 0b00111101:
+                        case 0b10111101:
+                            if (dir != -1)
+                            {
+                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
+                                dir = 1;
+                            }
+                            else
+                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
+                            break;
+
+                        case 0b01101101:
+                        case 0b00101101:
+                        case 0b10101101:
+                        case 0b01011101:
+                        case 0b00011101:
+                        case 0b10011101:
+                        case 0b01001101:
+                        case 0b00001101:
+                        case 0b10001101:
+                            if (dir != -1)
+                            {
+                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
+                                if (((dial_state[0] >> 8) & 0xFF) == 0xFF)
+                                    dir = 1;
+                            }
+                            else
+                            {
+                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
+                            }
+                            break;
+
+                        case 0b11111110:
+                            GenericHID_Adjust_Dial(0, -1, dial_state[0]);
+                            dir = -1;
+                            break;
+
+                        case 0b01111110:
+                        case 0b00111110:
+                        case 0b10111110:
+                            if (dir != 1)
+                            {
+                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
+                                dir = -1;
+                            }
+                            else
+                            {
+                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
+                            }
+                            break;
+
+                        case 0b01001110:
+                        case 0b00001110:
+                        case 0b10001110:
+                        case 0b01011110:
+                        case 0b00011110:
+                        case 0b10011110:
+                        case 0b01101110:
+                        case 0b00101110:
+                        case 0b10101110:
+                            if (dir != 1)
+                            {
+                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
+                                if (((dial_state[0] >> 8) & 0xFF) == 0xFF)
+                                    dir = -1;
+                            }
+                            else
+                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
+                            break;
+                        case 0b11111111:
+                            dir = 0;
+                            break;
                     }
-                    prev_enc1 = enc1;
-                    prev_enc1_encoded = enc1_encoded;
+                    //switch (dial_state[0])
+                    //{
+                    //    case 0b0100101101001011:
+                    //        GenericHID_Increment_Dial(0, dial_state[0]);
+                    //        GenericHID_Increment_Dial(0, dial_state[0]);
+                    //        GenericHID_Increment_Dial(0, dial_state[0]);
+                    //        GenericHID_Increment_Dial(0, dial_state[0]);
+                    //        break;
+                    //    case 0b1000011110000111:
+                    //        GenericHID_Decrement_Dial(0, dial_state[0]);
+                    //        GenericHID_Decrement_Dial(0, dial_state[0]);
+                    //        GenericHID_Decrement_Dial(0, dial_state[0]);
+                    //        GenericHID_Decrement_Dial(0, dial_state[0]);
+                    //        break;
+                    //}
                 }
             }
             break;
         case ENC2B:
-            {
-                uint8_t pins = PIND;
-                dials &= 0b00000011;
-                enc2_encoded =  ((pins >> PD6) & 1) << 1 | ((pins >> PD1) & 1);
-                if (enc2_encoded != prev_enc2_encoded)
-                {
-                    enc2 = read_encoder_2(enc2_encoded);
-                    if ((enc2 > 0) && (enc2 != prev_enc2))
-                    {
-                        dials |= (enc2 & 0b11) << 2;
-                        //HidInReports_Create_Dial_Report(1, enc2);
-                    }
-                    prev_enc2 = enc2;
-                    prev_enc2_encoded = enc2_encoded;
-                }
-            }
+            //{
+            //    uint8_t pins = PIND;
+            //    dials &= 0b00000011;
+            //    dials |= (((pins >> PD6) & 1) << 1 | ((pins >> PD1) & 1)) << 2;
+            //}
+            //{
+            //    uint8_t pins = PIND;
+            //    dials &= 0b00000011;
+            //    enc2_encoded =  ((pins >> PD6) & 1) << 1 | ((pins >> PD1) & 1);
+            //    if (enc2_encoded != prev_enc2_encoded)
+            //    {
+            //        enc2 = read_encoder_2(enc2_encoded);
+            //        if ((enc2 > 0) && (enc2 != prev_enc2))
+            //        {
+            //            dials |= (enc2 & 0b11) << 2;
+            //            //HidInReports_Create_Dial_Report(1, enc2);
+            //        }
+            //        prev_enc2 = enc2;
+            //        prev_enc2_encoded = enc2_encoded;
+            //    }
+            //}
             break;
 
     }
-    GenericHID_Write_ButtonDialData( buttons, dials);
+    return dials;//buttons | (dials << 3);
 }
