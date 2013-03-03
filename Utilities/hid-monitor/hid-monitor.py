@@ -87,8 +87,7 @@ try:
                 #if velocity > 0:
                     #print index, pressure, velocity
                     #triggered.append((pad,velocity))
-            if (report[98] != prev_buttons_and_dials):
-                prev_buttons_and_dials = report[98]
+            if (report[98] != 0):
                 if (report[98] > 240):
                     print -(256 - report[98])
                 else:

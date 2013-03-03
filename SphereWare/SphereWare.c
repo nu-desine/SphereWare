@@ -217,8 +217,16 @@ int main(void)
 
         for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
         {
-            MUX_Select(pad);
             R2R_Write(r2r_val[pad]);
+
+            not_being_played[pad] = false;
+            for (int i = 0; i < 8; i++)
+            {
+                MUX_Select(i);
+                ButtonsAndDials_Read(i);
+            }
+
+            MUX_Select(pad);
 
             if (thresholds_raised)
             {
@@ -233,8 +241,6 @@ int main(void)
                 _delay_us(100);
             }
 
-            not_being_played[pad] = false;
-            ButtonsAndDials_Read(pad);
 
             if (pad < 40) 
             { 

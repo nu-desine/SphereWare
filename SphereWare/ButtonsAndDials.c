@@ -96,19 +96,22 @@ uint8_t ButtonsAndDials_Read(uint8_t pad)
                     switch (dial_state[0] & 0xFF)
                     {
                         case 0b11111101:
-                            GenericHID_Adjust_Dial(0, 1, dial_state[0]);
-                            dir = 1;
+                            if (dir == 0)
+                            {
+                                GenericHID_Adjust_Dial(0, -1, dial_state[0]);
+                                dir = -1;
+                            }
                             break;
                         case 0b01111101:
                         case 0b00111101:
                         case 0b10111101:
-                            if (dir != -1)
+                            if (dir != 1)
                             {
-                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
-                                dir = 1;
+                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
+                                dir = -1;
                             }
                             else
-                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
                             break;
 
                         case 0b01101101:
@@ -120,34 +123,37 @@ uint8_t ButtonsAndDials_Read(uint8_t pad)
                         case 0b01001101:
                         case 0b00001101:
                         case 0b10001101:
-                            if (dir != -1)
+                            if (dir != 1)
                             {
-                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
                                 if (((dial_state[0] >> 8) & 0xFF) == 0xFF)
-                                    dir = 1;
+                                    dir = -1;
                             }
                             else
                             {
-                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
                             }
                             break;
 
                         case 0b11111110:
-                            GenericHID_Adjust_Dial(0, -1, dial_state[0]);
-                            dir = -1;
+                            if (dir == 0)
+                            {
+                                GenericHID_Adjust_Dial(0, 1, dial_state[0]);
+                                dir = 1;
+                            }
                             break;
 
                         case 0b01111110:
                         case 0b00111110:
                         case 0b10111110:
-                            if (dir != 1)
+                            if (dir != -1)
                             {
-                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
-                                dir = -1;
+                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
+                                dir = 1;
                             }
                             else
                             {
-                                GenericHID_Adjust_Dial(0, 3, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, -3, dial_state[0]);
                             }
                             break;
 
@@ -160,16 +166,17 @@ uint8_t ButtonsAndDials_Read(uint8_t pad)
                         case 0b01101110:
                         case 0b00101110:
                         case 0b10101110:
-                            if (dir != 1)
+                            if (dir != -1)
                             {
-                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
                                 if (((dial_state[0] >> 8) & 0xFF) == 0xFF)
-                                    dir = -1;
+                                    dir = 1;
                             }
                             else
-                                GenericHID_Adjust_Dial(0, 10, dial_state[0]);
+                                GenericHID_Adjust_Dial(0, -10, dial_state[0]);
                             break;
                         case 0b11111111:
+                            GenericHID_Adjust_Dial(0, 0, dial_state[0]);
                             dir = 0;
                             break;
                     }
