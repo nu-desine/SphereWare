@@ -191,6 +191,7 @@ int main(void)
     uint8_t r2r_val[LAST_PAD+1];
     int16_t init_val_se[LAST_PAD+1];
     int16_t filtered_val[LAST_PAD+1];
+    bool velocity_sent[LAST_PAD+1];
 
     SetupHardware();
 
@@ -208,7 +209,9 @@ int main(void)
 
     LED_WriteArray(led_channels);
 
-    bool velocity_sent[LAST_PAD+1];
+    //detect wether this is an elite unit
+    MUX_Select(5);
+    ButtonsAndDials_Read(5);
 
     while (1) 
     {
@@ -218,7 +221,7 @@ int main(void)
             R2R_Write(r2r_val[pad]);
 
             not_being_played[pad] = false;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 5; i++)
             {
                 MUX_Select(i);
                 ButtonsAndDials_Read(i);

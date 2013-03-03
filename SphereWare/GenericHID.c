@@ -9,14 +9,15 @@
 
    SphereWare is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+    */
 #include "GenericHID.h"
+#include "MIDI.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 
@@ -29,13 +30,13 @@ void GenericHID_Task(void)
         return;
 
     Endpoint_SelectEndpoint(GENERIC_IN_EPADDR);
-    
+
     /* Check to see if the host is ready to accept another packet */
     if (Endpoint_IsINReady())
     {
         uint8_t data[64];
 
-        
+
         for (int i = 0; i < 64; i++)
         {
             data[i] = hid_in_buffer[i + (flip * 64)];
@@ -48,16 +49,16 @@ void GenericHID_Task(void)
         }
 
         flip = !flip;
-        
+
         /* Write Report Data */
         Endpoint_Write_Stream_LE(&data, sizeof(data), NULL);
-        
+
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearIN();
     }
 
     Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
-    
+
     /* Check to see if a packet has been sent from the host */
     if (Endpoint_IsOUTReceived())
     {
@@ -66,14 +67,14 @@ void GenericHID_Task(void)
         {
             /* Create a temporary buffer to hold the read in report from the host */
             uint8_t GenericData[GENERIC_REPORT_SIZE];
-            
+
             /* Read Generic Report Data */
             Endpoint_Read_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-            
+
             /* Process Generic Report Data */
             GenericHID_ProcessReport(GenericData);
         }
-        
+
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearOUT();
     }
@@ -111,11 +112,11 @@ void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
     sei(); //enable interrupts
 }
 
-void GenericHID_Write_ButtonDialData(uint8_t buttons_and_dials) 
+void GenericHID_Write_ButtonData(uint8_t buttons) 
 {
     cli(); //disable interrupts
 
-    hid_in_buffer[97] = buttons_and_dials << 1 | 1;//((buttons & 0b111) << 1) | (dials << 4) | 1; //TODO add elite detection and info
+    hid_in_buffer[97] = buttons;
 
     sei(); //enable interrupts
 }
@@ -150,17 +151,17 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
        function is called each time the host has sent a new report. DataArray is an array
        holding the report sent from the host.
        */
-    
+
     if (DataArray[0] == 0x01) 
     {
         int noOfMessages = DataArray[1];
-        
+
         //decode each message within the HID report
         for (int i = 0; i < noOfMessages; i++)
         {
             //get the first byte index of the message
             int messageIndex  = (i * 4) + 2;
-            
+
             //==== MIDI Message ====
             if (DataArray[messageIndex] == 0)
             {
@@ -169,13 +170,13 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                 message[1] = DataArray[messageIndex+1];
                 message[2] = DataArray[messageIndex+2];
                 message[3] = DataArray[messageIndex+3];
-                
+
                 MIDI_Send_Usb_Midi (message);
                 MIDI_Send_Uart_Midi (message);
             }
-            
+
         }
-        
+
     }
 
 }
