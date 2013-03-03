@@ -20,12 +20,6 @@
 
 // Set pins to outputs and initial states
 void LED_Init() {
-    //pinMode(datapin, OUTPUT);
-    //pinMode(latchpin, OUTPUT);
-    //pinMode(enablepin, OUTPUT);
-    //pinMode(clockpin, OUTPUT);
-    //digitalWrite(latchpin, LOW);
-    //digitalWrite(enablepin, LOW);
     CLKREG |= (1 << CLKPIN);
     ENAREG |= (1 << ENAPIN);
     LATREG |= (1 << LATPIN);
