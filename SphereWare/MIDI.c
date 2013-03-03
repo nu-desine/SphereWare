@@ -20,19 +20,12 @@
 
 void MIDI_Init(void)
 {
-    // set up the UART
-    UCSR1B |= (1 << TXEN1);
+	UCSR1B |= (1 << TXEN1);
     UBRR1H = (BAUD_PRESCALE >> 8);  
     UBRR1L = BAUD_PRESCALE;
 }
 
-void MIDI_Send (uint8_t* DataArray)
-{
-    void MIDI_UART_Send (uint8_t* DataArray);
-    void MIDI_USB_Send (uint8_t* DataArray);
-}
-
-void MIDI_UART_Send (uint8_t* DataArray)
+void MIDI_Send_Uart_Midi (uint8_t* DataArray)
 {
     uint8_t statusByte = DataArray[1];
     uint8_t dataByte1 = DataArray[2];
@@ -44,7 +37,7 @@ void MIDI_UART_Send (uint8_t* DataArray)
     MIDI_Uart_Put (dataByte2);
 }
 
-void MIDI_USB_Send (uint8_t* DataArray)
+void MIDI_Send_Usb_Midi (uint8_t* DataArray)
 {
     uint8_t statusByte = DataArray[1];
     uint8_t dataByte1 = DataArray[2];
@@ -76,7 +69,7 @@ void MIDI_USB_Send (uint8_t* DataArray)
     }
 }
 
-void MIDI_USB_Put (char s)
+void MIDI_Uart_Put (char s)
 {
     while (!(UCSR1A & (1 << UDRE1)));
     UDR1 = s;  

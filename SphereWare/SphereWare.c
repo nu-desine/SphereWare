@@ -56,12 +56,12 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 47 
+#define LAST_PAD 39 
 #define LOOK_AT_PAD 0
 
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_value_array)
+void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
 {
     int16_t val;
     for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
@@ -73,25 +73,23 @@ void Calibrate (uint8_t* r2r_value_array)
         {
             R2R_Write(i);
             _delay_ms(1);
-            val = ADC_Read(DIFF_0_X10, ADC4);
+            val = -ADC_Read(DIFF_0_X10, ADC4);
 
-            if (val < 40)
+            if (val > -400)
             {
                 r2r_value_array[pad] = i;
+                init_value_array[pad] = val;
                 break;
             }
         }
-        //keep the USB connection alive
-        USB_USBTask();
-        HID_Task();
     }
 
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-    {
-        val = ADC_Read(DIFF_0_X10, ADC4);
-        if (val < 10)
-            r2r_value_array[pad]--;
-    }
+    //for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    //{
+    //    val = ADC_Read(DIFF_0_X1, ADC4);
+    //    if (val < 10)
+    //        r2r_value_array[pad]--;
+    //}
 
         
 }
@@ -112,16 +110,16 @@ int main(void)
 
     bool led_on = true;
     int led_channels[NUM_OF_LEDS][3];
-    int16_t val = 0;
-    int16_t peak[LAST_PAD+1];
     uint8_t r2r_values[LAST_PAD+1];
     uint8_t velocity[LAST_PAD+1];
     uint8_t sample_count[LAST_PAD+1];
-    int16_t prev_val[LAST_PAD+1];
+    int16_t init_val[LAST_PAD+1];
 
     SetupHardware();
 
     sei();
+
+    Calibrate(r2r_values, init_val);
 
     // turn LED blue
     for (int i = 0; i < NUM_OF_LEDS; ++i)
@@ -133,85 +131,88 @@ int main(void)
 
     LED_WriteArray(led_channels);
 
-    Calibrate(r2r_values);
-
     MUX_Select(FIRST_PAD);
     R2R_Write(r2r_values[FIRST_PAD]);
     _delay_us(90);
 
+    bool velocity_sent[LAST_PAD+1];
+
     while (1) 
     {
+
         MUX_Select(FIRST_PAD);
         R2R_Write(r2r_values[FIRST_PAD]);
         _delay_us(50);
+        
 
-        for (int row = 0; row < 6; ++row)
+        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; ++pad) 
         {
-            MUX_Select(row << 3);
-            _delay_us(50);
-            for (int i = 0; i < 8; ++i)
+            MUX_Select(pad);
+            R2R_Write(r2r_values[pad]);
+            if (!(pad % 8))
+                _delay_us(100);
+            _delay_us(100);
+            ButtonsAndDials_Read(pad);
+            int16_t val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
+
+            if (val > 0)
             {
-                uint8_t pad = row << 3 | i;
-                MUX_Select(pad);
-                R2R_Write(r2r_values[pad]);
-                ButtonsAndDials_Read(pad);
-                val = ADC_Read(DIFF_0_X10, ADC4);
-                //if (pad == LOOK_AT_PAD)
-                //    GenericHID_Write_PadData(pad, val, val);
-                if (val < 0)
+                if (!velocity_sent[pad])
                 {
-                    if (velocity[pad] == 0)
+                    int16_t velocity;
+                    int16_t peak = val;
+                    for (int i = 0; i < 200; ++i)
                     {
-                        for (int i = 0; i < 200; ++i)
+                        val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
+                        if (val > peak)
                         {
-                            val = ADC_Read(DIFF_0_X10, ADC4);
-                            if (val < peak[pad])
-                            {
-                                peak[pad] = val;
-                            }
-                        }
-                        if ((-peak[pad] >> 2) > 0)
-                        {
-                            velocity[pad] = -peak[pad] >> 2;
-                            //if (pad == LOOK_AT_PAD)
-                            GenericHID_Write_PadData(pad, -peak[pad], velocity[pad]);
-                            prev_val[pad] = -peak[pad];
-                            peak[pad] = 0;
+                            peak = val;
                         }
                     }
-                    else
-                    {
-                        val = (-val + prev_val[pad]) >> 1;
-                        if (val != prev_val[pad])
-                        {
-                            if (val == 510)
-                                val = 511;
-                            GenericHID_Write_PadData(pad, val, velocity[pad]);
-                            prev_val[pad] = val;
-                        }
-                    }
+                    velocity = peak >> 1;
+                    if (velocity > 127)
+                        velocity = 127;
+                    //GenericHID_Write_DebugData(pad, velocity);
+                    GenericHID_Write_PadData(pad, velocity, velocity);
+                    velocity_sent[pad] = true;
                 }
-                else
-                {
-                    if (velocity[pad] != 0)
-                    {
-                        GenericHID_Write_PadData(pad, 0, 0);
-                        prev_val[pad] = 0;
-                    }
-                    velocity[pad] = 0;
-                    sample_count[pad] = 0;
-                    peak[pad] = 0;
-                }
-
-                //if (pad < LAST_PAD)
-                //{
-                //    MUX_Select(pad+1);
-                //    R2R_Write(r2r_values[pad+1]);
-                //}
-
-                USB_USBTask();
-                HID_Task();
             }
+            else
+            {
+                if (velocity_sent[pad])
+                {
+                    //GenericHID_Write_PadData(pad, 0, 0);
+                    velocity_sent[pad] = false;
+                }
+            }
+
+
+
+            //if (val <= -480)
+            //{
+            //    val = -(-ADC_Read(DIFF_0_X1, ADC4) - 48 + 480);
+            //}
+
+            //val -= init_val[pad] - 40;
+
+            ////if (val > 0)
+            ////    val = 0;
+            ////else if (val < -1024)
+            ////    val = -1024;
+
+            //if (val < 0)
+            //{
+            //    if (!velocity_sent[pad])
+            //    {
+            //        int16_t velocity = -val;
+            //        GenericHID_Write_DebugData(pad, velocity);
+            //        velocity_sent[pad] = true;
+            //    }
+            //}
+            //else
+            //{
+            //    velocity_sent[pad] = false;
+            //}
 
         }
 
@@ -290,39 +291,40 @@ void EVENT_USB_Device_ConfigurationChanged(void)
  */
 void EVENT_USB_Device_ControlRequest(void)
 {
-    /* Handle HID Class specific requests */
-    switch (USB_ControlRequest.bRequest)
-    {
-        case HID_REQ_GetReport:
-            if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
-            {
-                uint8_t GenericData[GENERIC_REPORT_SIZE];
-                CreateGenericHIDReport(GenericData);
 
-                Endpoint_ClearSETUP();
+    ///* Handle HID Class specific requests */
+    //switch (USB_ControlRequest.bRequest)
+    //{
+    //    case HID_REQ_GetReport:
+    //        if (USB_ControlRequest.bmRequestType == (REQDIR_DEVICETOHOST | REQTYPE_CLASS | REQREC_INTERFACE))
+    //        {
+    //            uint8_t GenericData[GENERIC_REPORT_SIZE];
+    //            CreateGenericHIDReport(GenericData);
 
-                /* Write the report data to the control endpoint */
-                Endpoint_Write_Control_Stream_LE(&GenericData, sizeof(GenericData));
-                Endpoint_ClearOUT();
-            }
+    //            Endpoint_ClearSETUP();
 
-            break;
-        case HID_REQ_SetReport:
-            if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
-            {
-                uint8_t GenericData[GENERIC_REPORT_SIZE];
+    //            /* Write the report data to the control endpoint */
+    //            Endpoint_Write_Control_Stream_LE(&GenericData, sizeof(GenericData));
+    //            Endpoint_ClearOUT();
+    //        }
 
-                Endpoint_ClearSETUP();
+    //        break;
+    //    case HID_REQ_SetReport:
+    //        if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_CLASS | REQREC_INTERFACE))
+    //        {
+    //            uint8_t GenericData[GENERIC_REPORT_SIZE];
 
-                /* Read the report data from the control endpoint */
-                Endpoint_Read_Control_Stream_LE(&GenericData, sizeof(GenericData));
-                Endpoint_ClearIN();
+    //            Endpoint_ClearSETUP();
 
-                ProcessGenericHIDReport(GenericData);
-            }
+    //            /* Read the report data from the control endpoint */
+    //            Endpoint_Read_Control_Stream_LE(&GenericData, sizeof(GenericData));
+    //            Endpoint_ClearIN();
 
-            break;
-    }
+    //            ProcessGenericHIDReport(GenericData);
+    //        }
+
+    //        break;
+    //}
 }
 
 /** Function to process the last received report from the host.
@@ -336,12 +338,6 @@ void ProcessGenericHIDReport(uint8_t* DataArray)
        function is called each time the host has sent a new report. DataArray is an array
        holding the report sent from the host.
        */
-
-    // Received a MIDI message report
-    if (DataArray[0] == 0x06) 
-    {
-        MIDI_Send(DataArray);
-    }
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
@@ -359,30 +355,6 @@ void CreateGenericHIDReport(uint8_t* DataArray)
 
 void HID_Task(void)
 {
-    /* Device must be connected and configured for the task to run */
-    if (USB_DeviceState != DEVICE_STATE_Configured)
-        return;
 
-    Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
-
-    /* Check to see if a packet has been sent from the host */
-    if (Endpoint_IsOUTReceived())
-    {
-        /* Check to see if the packet contains data */
-        if (Endpoint_IsReadWriteAllowed())
-        {
-            /* Create a temporary buffer to hold the read in report from the host */
-            uint8_t GenericData[GENERIC_REPORT_SIZE];
-
-            /* Read Generic Report Data */
-            Endpoint_Read_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-
-            /* Process Generic Report Data */
-            ProcessGenericHIDReport(GenericData);
-        }
-
-        /* Finalize the stream transfer to send the last packet */
-        Endpoint_ClearOUT();
-    }
 }
 

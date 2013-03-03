@@ -51,7 +51,7 @@ void GenericHID_Task(void)
     }
 
     Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
-
+    
     /* Check to see if a packet has been sent from the host */
     if (Endpoint_IsOUTReceived())
     {
@@ -59,15 +59,15 @@ void GenericHID_Task(void)
         if (Endpoint_IsReadWriteAllowed())
         {
             /* Create a temporary buffer to hold the read in report from the host */
-            uint8_t GenericData[8]; //TODO set-up report sizes
-
+            uint8_t GenericData[GENERIC_REPORT_SIZE];
+            
             /* Read Generic Report Data */
             Endpoint_Read_Stream_LE(&GenericData, sizeof(GenericData), NULL);
-
+            
             /* Process Generic Report Data */
             GenericHID_ProcessReport(GenericData);
         }
-
+        
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearOUT();
     }
@@ -79,6 +79,16 @@ void GenericHID_Write_PadData (uint8_t pad_number, int16_t pad_value, uint8_t pa
 
     hid_in_buffer[1 + (pad_number * 2)] = pad_velocity & 0x7F | ((pad_value & 1) << 7);
     hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 1;
+
+    sei(); //enable interrupts
+}
+
+void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
+{
+    cli(); //disable interrupts
+    hid_in_buffer[0] = 0x02;
+    hid_in_buffer[1 + (pad_number * 2)] = pad_value & 0xFF;
+    hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 8;
 
     sei(); //enable interrupts
 }
@@ -99,12 +109,34 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
        function is called each time the host has sent a new report. DataArray is an array
        holding the report sent from the host.
        */
-
-    // Received a MIDI message report
-    if (DataArray[0] == 0x00) 
+    
+    if (DataArray[0] == 0x01) 
     {
-        MIDI_Send (DataArray);
+        int noOfMessages = DataArray[1];
+        
+        //decode each message within the HID report
+        for (int i = 0; i < noOfMessages; i++)
+        {
+            //get the first byte index of the message
+            int messageIndex  = (i * 4) + 2;
+            
+            //==== MIDI Message ====
+            if (DataArray[messageIndex] == 0)
+            {
+                uint8_t message[4];
+                message[0] = 0x00;
+                message[1] = DataArray[messageIndex+1];
+                message[2] = DataArray[messageIndex+2];
+                message[3] = DataArray[messageIndex+3];
+                
+                MIDI_Send_Usb_Midi (message);
+                MIDI_Send_Uart_Midi (message);
+            }
+            
+        }
+        
     }
+
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
