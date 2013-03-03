@@ -131,7 +131,7 @@ ISR(TIMER1_COMPA_vect)
     if (none_played)
     {
         count++;
-        if (count > 2000)
+        if (count > 20000)
         {
             count = 0;
             // turn LED red

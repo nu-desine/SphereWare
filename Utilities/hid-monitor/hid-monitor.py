@@ -79,14 +79,13 @@ try:
         report = h.read(104)
         #print len(report)
         if report[0] == 0x01:
-            for index, first_byte in enumerate(report[1:-1:2]):
+            for index, first_byte in enumerate(report[1:97:2]):
                 second_byte = report[index * 2 + 2]
                 velocity = first_byte & 0x7F
                 pressure = (first_byte >> 7) | (second_byte << 1)
                 data[index] =  (pressure, velocity)
-                #if velocity > 0:
-                    #print index, pressure, velocity
-                    #triggered.append((pad,velocity))
+                if velocity > 0:
+                    print "pad: ", index, pressure, velocity
             if (report[97] != 0b1):
                 print "buttons: ",
                 print bin(report[97], 8);
