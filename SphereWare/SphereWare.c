@@ -56,47 +56,128 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 39 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
+bool not_being_played[LAST_PAD+1+5];
+int16_t init_val[LAST_PAD+1];
+bool thresholds_raised = false;
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_value_array, int16_t * init_value_array)
+void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
 {
     int16_t val;
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
     {
-        r2r_value_array[pad] = 0;
+        r2r_val[pad] = 0;
         MUX_Select(pad);
+        cli(); //disable interrupts
+        not_being_played[pad] = true;
+        sei(); //enable interrupts
         _delay_ms(1);
-        for (int i = 0; i < 64; ++i)
+        if (pad < 40)
         {
-            R2R_Write(i);
-            _delay_ms(1);
-            val = -ADC_Read(DIFF_0_X10, ADC4);
-
-            if (val > -400)
+            for (int i = 0; i < 64; i++)
             {
-                r2r_value_array[pad] = i;
-                init_value_array[pad] = val;
-                break;
+                R2R_Write(i);
+                _delay_ms(1);
+                val = -ADC_Read(DIFF_1_X10, ADC4);
+
+                if (val > -400)
+                {
+                    r2r_val[pad] = i;
+                    init_val[pad] = val + 50;
+                    break;
+                }
+            }
+        }
+        else //if pad >= 40
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                R2R_Write(i);
+                _delay_ms(1);
+                val = -ADC_Read(DIFF_1_X10, ADC4);
+
+                if (val > 40)
+                {
+                    r2r_val[pad] = i;
+                    init_val[pad] = val + 100;
+                    break;
+                }
             }
         }
     }
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    {
+        MUX_Select(pad);
+        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4);
+    }
 
-    //for (int pad = FIRST_PAD; pad <= LAST_PAD; ++pad)
-    //{
-    //    val = ADC_Read(DIFF_0_X1, ADC4);
-    //    if (val < 10)
-    //        r2r_value_array[pad]--;
-    //}
-
-        
 }
 
 //interrupt callback
 ISR(TIMER1_COMPA_vect)
 {
+    static int count = 0;
+    bool none_played = true;
+
+    for (int pad = FIRST_PAD; pad <= (LAST_PAD + 5); pad++)
+    {
+        none_played &= not_being_played[pad];
+    }
+
+
+    if (none_played)
+    {
+        count++;
+        if (count > 20000)
+        {
+            count = 0;
+            // dim LED
+            int led_channels[NUM_OF_LEDS][3];
+            for (int i = 0; i < NUM_OF_LEDS; i++)
+            {
+                led_channels[i][0] = 0;
+                led_channels[i][1] = 0;
+                led_channels[i][2] = 127;
+            }
+            LED_WriteArray(led_channels);
+            if (!thresholds_raised)
+            {
+                for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+                {
+                    init_val[pad] += 100; 
+                }
+                thresholds_raised = true;
+            }
+
+        }
+
+    }
+    else
+    {
+            if (thresholds_raised)
+            {
+                for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+                {
+                    init_val[pad] -= 100; 
+                }
+                thresholds_raised = false;
+                // turn LED blue
+                int led_channels[NUM_OF_LEDS][3];
+                for (int i = 0; i < NUM_OF_LEDS; i++)
+                {
+                    led_channels[i][0] = 0;
+                    led_channels[i][1] = 0;
+                    led_channels[i][2] = 1023;
+                }
+                LED_WriteArray(led_channels);
+            }
+            count = 0;
+    }
+
+
     GenericHID_Task();
     USB_USBTask();
 } 
@@ -108,21 +189,20 @@ ISR(TIMER1_COMPA_vect)
 int main(void)
 {
 
-    bool led_on = true;
     int led_channels[NUM_OF_LEDS][3];
-    uint8_t r2r_values[LAST_PAD+1];
-    uint8_t velocity[LAST_PAD+1];
-    uint8_t sample_count[LAST_PAD+1];
-    int16_t init_val[LAST_PAD+1];
+    uint8_t r2r_val[LAST_PAD+1];
+    int16_t init_val_se[LAST_PAD+1];
+    int16_t filtered_val[LAST_PAD+1];
+    bool velocity_sent[LAST_PAD+1];
 
     SetupHardware();
 
     sei();
 
-    Calibrate(r2r_values, init_val);
+    Calibrate(r2r_val, init_val_se);
 
     // turn LED blue
-    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    for (int i = 0; i < NUM_OF_LEDS; i++)
     {
         led_channels[i][0] = 0;
         led_channels[i][1] = 0;
@@ -131,91 +211,173 @@ int main(void)
 
     LED_WriteArray(led_channels);
 
-    MUX_Select(FIRST_PAD);
-    R2R_Write(r2r_values[FIRST_PAD]);
-    _delay_us(90);
-
-    bool velocity_sent[LAST_PAD+1];
+    //detect wether this is an elite unit
+    MUX_Select(5);
+    ButtonsAndDials_Read(5, NULL);
 
     while (1) 
     {
 
-        MUX_Select(FIRST_PAD);
-        R2R_Write(r2r_values[FIRST_PAD]);
-        _delay_us(50);
-        
-
-        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; ++pad) 
+        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
         {
-            MUX_Select(pad);
-            R2R_Write(r2r_values[pad]);
-            if (!(pad % 8))
-                _delay_us(100);
-            _delay_us(100);
-            ButtonsAndDials_Read(pad);
-            int16_t val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
+            R2R_Write(r2r_val[pad]);
 
-            if (val > 0)
+            //not_being_played[pad] = false;
+
+            cli(); //disable interrupts
+            for (int i = 0; i < 5; i++)
             {
-                if (!velocity_sent[pad])
+                MUX_Select(i);
+                ButtonsAndDials_Read(i, &not_being_played[LAST_PAD+1]);
+            }
+            sei(); //enable interrupts
+
+            MUX_Select(pad);
+
+
+            if (pad < 40) 
+            { 
+
+                if (thresholds_raised)
                 {
-                    int16_t velocity;
-                    int16_t peak = val;
-                    for (int i = 0; i < 200; ++i)
+                    if (!(pad % 8))
+                        _delay_ms(1);
+                    _delay_ms(1);
+                }
+                else
+                {
+                    if (!(pad % 8))
+                        _delay_us(100);
+                    _delay_us(100);
+                }
+
+                int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+                //GenericHID_Write_DebugData(pad, init_val[pad]);
+
+                if (val > 0)
+                {
+                    if (!velocity_sent[pad])
                     {
-                        val = -ADC_Read(DIFF_0_X10, ADC4) - init_val[pad] - 50;
-                        if (val > peak)
+                        int16_t velocity;
+                        int16_t peak = val;
+                        for (int i = 0; i < 200; i++)
                         {
-                            peak = val;
+                            val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+                            if (val > peak)
+                            {
+                                peak = val;
+                            }
                         }
+                        velocity = peak >> 1;
+                        if (velocity > 127)
+                            velocity = 127;
+                        cli(); //disable interrupts
+                        GenericHID_Write_PadData(pad, velocity, velocity);
+                        not_being_played[pad] = false;
+                        sei(); //enable interrupts
+                        velocity_sent[pad] = true;
+                        filtered_val[pad] = velocity;
+                        init_val[pad] -= 50;
                     }
-                    velocity = peak >> 1;
-                    if (velocity > 127)
-                        velocity = 127;
-                    //GenericHID_Write_DebugData(pad, velocity);
-                    GenericHID_Write_PadData(pad, velocity, velocity);
-                    velocity_sent[pad] = true;
+                    else if (velocity_sent[pad])
+                    {
+                        if (val > (480 - init_val[pad]))
+                            val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
+
+
+                        filtered_val[pad] = ((filtered_val[pad] * 0.85) + (val * 0.15));
+
+
+                        if (filtered_val[pad] > 511)
+                            filtered_val[pad] = 511;
+
+
+                        cli(); //disable interrupts
+                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        not_being_played[pad] = false;
+                        sei(); //enable interrrupts
+                    }
+
+                }
+                else if (velocity_sent[pad])
+                {
+                    cli(); //disable interrupts
+                    GenericHID_Write_PadData(pad, 0, 0);
+                    not_being_played[pad] = true;
+                    sei(); //enable interrrupts
+                    velocity_sent[pad] = false;
+                    init_val[pad] += 50;
                 }
             }
-            else
+            else // if pad >= 40
             {
-                if (velocity_sent[pad])
+                if (thresholds_raised)
                 {
-                    //GenericHID_Write_PadData(pad, 0, 0);
+                    if (!(pad % 8))
+                        _delay_ms(1);
+                    _delay_ms(1);
+                }
+                else
+                {
+                    if (!(pad % 8))
+                        _delay_us(500);
+                    _delay_us(500);
+                }
+
+                int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+
+                if (val > 0)
+                {
+                    if (!velocity_sent[pad])
+                    {
+                        int16_t velocity;
+                        int16_t peak = val;
+
+                        for (int i = 0; i < 200; i++)
+                        {
+                            val = ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+                            if (val > peak)
+                            {
+                                peak = val;
+                            }
+                        }
+                        velocity = peak;
+                        if (velocity > 127)
+                            velocity = 127;
+
+                        cli(); //disable interrupts
+                        GenericHID_Write_PadData(pad, velocity * 2, velocity);
+                        sei(); //enable interrupts
+                        velocity_sent[pad] = true;
+                        filtered_val[pad] = velocity * 2;
+                    }
+                    else if (velocity_sent[pad])
+                    {
+                        if (val > (480 - init_val[pad]))
+                            val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
+
+                        filtered_val[pad] = ((filtered_val[pad] * 0.85) + ((val * 2) * 0.15));
+
+                        if (filtered_val[pad] > 511)
+                        {
+                            filtered_val[pad] = 511;
+                        }
+
+                        cli(); //disable interrupts
+                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        sei(); //enable interrupts
+                    }
+
+                }
+                else if (velocity_sent[pad])
+                {
+                    cli(); //disable interrupts
+                    GenericHID_Write_PadData(pad, 0, 0);
+                    sei(); //enable interrupts
                     velocity_sent[pad] = false;
                 }
             }
-
-
-
-            //if (val <= -480)
-            //{
-            //    val = -(-ADC_Read(DIFF_0_X1, ADC4) - 48 + 480);
-            //}
-
-            //val -= init_val[pad] - 40;
-
-            ////if (val > 0)
-            ////    val = 0;
-            ////else if (val < -1024)
-            ////    val = -1024;
-
-            //if (val < 0)
-            //{
-            //    if (!velocity_sent[pad])
-            //    {
-            //        int16_t velocity = -val;
-            //        GenericHID_Write_DebugData(pad, velocity);
-            //        velocity_sent[pad] = true;
-            //    }
-            //}
-            //else
-            //{
-            //    velocity_sent[pad] = false;
-            //}
-
         }
-
     }
 }
 

@@ -145,7 +145,18 @@ static void SetupHardware(void)
     USB_Init();
     LED_Init();
 
+    // turn LED red
+    int led_channels[NUM_OF_LEDS][3];
+    for (int i = 0; i < NUM_OF_LEDS; ++i)
+    {
+        led_channels[i][0] = 1023;
+        led_channels[i][1] = 0;
+        led_channels[i][2] = 0;
+    }
+    LED_WriteArray(led_channels);
+
     //PE2 button as input pulled high
+    DDRE |= (1 << PE2);
     PORTE |= (1 << PE2);
 }
 

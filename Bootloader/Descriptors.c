@@ -75,7 +75,7 @@ const USB_Descriptor_Device_t DeviceDescriptor =
 
 	.VendorID               = 0x1d50,
 	.ProductID              = 0x6041,
-    .ReleaseNumber          = VERSION_BCD(01.00),
+    .ReleaseNumber          = VERSION_BCD(00.01),
 
     .ManufacturerStrIndex   = NO_DESCRIPTOR,
     .ProductStrIndex        = NO_DESCRIPTOR,
@@ -103,7 +103,7 @@ const USB_Descriptor_Configuration_t ConfigurationDescriptor =
 
             .ConfigAttributes       = USB_CONFIG_ATTR_RESERVED,
 
-            .MaxPowerConsumption    = USB_CONFIG_POWER_MA(500)
+            .MaxPowerConsumption    = USB_CONFIG_POWER_MA(100)
         },
 
     .HID_Interface =

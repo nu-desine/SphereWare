@@ -71,29 +71,46 @@ def frombits(bits):
 data = {} 
 velocities = [0] * 48
 prev_report = 0
+prev_buttons_and_dials = 0;
 
 triggered = []
 try:
     while 1:
-        report = h.read(98)
+        report = h.read(104)
         #print len(report)
         if report[0] == 0x01:
-            for index, first_byte in enumerate(report[1:-1:2]):
+            for index, first_byte in enumerate(report[1:97:2]):
                 second_byte = report[index * 2 + 2]
                 velocity = first_byte & 0x7F
                 pressure = (first_byte >> 7) | (second_byte << 1)
                 data[index] =  (pressure, velocity)
                 if velocity > 0:
-                    triggered.append((pad,velocity))
-            for index in data:
-                sys.stdout.write("(%2i," % index)
-                sys.stdout.write("%3i," % data[index][0])
-                sys.stdout.write("%3i)" % data[index][1])
-                sys.stdout.write("     ")
+                    print "pad: ", index, pressure, velocity
+            if (report[97] != 0b1):
+                print "buttons: ",
+                print bin(report[97], 8);
+            if (report[98] != 0):
+                print "dial 1: ",
+                if (report[98] > 127):
+                    print -(256 - report[98])
+                else:
+                    print report[98]
+            if (report[99] != 0):
+                print "dial 2: ",
+                if (report[99] > 127):
+                    print -(256 - report[99])
+                else:
+                    print report[99]
+            #for index in data:
+            #    if (dataindex[1] > 0):
+            #        sys.stdout.write("(%2i," % index)
+            #        sys.stdout.write("%3i," % data[index][0])
+            #        sys.stdout.write("%3i)" % data[index][1])
+            #        sys.stdout.write("     ")
                 #if count > 5:
                 #    sys.stdout.write("\r\n")
                 #    count = 0
-            sys.stdout.write("\r\n")
+            #sys.stdout.write("\r\n")
         elif report[0] == 0x02:
             for index, first_byte in enumerate(report[1:-1:2]):
                 if index in look_at_pad:

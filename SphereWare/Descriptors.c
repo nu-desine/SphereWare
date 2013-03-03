@@ -106,7 +106,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 
     .ManufacturerStrIndex   = 0x01,
     .ProductStrIndex        = 0x02,
-    .SerialNumStrIndex      = USE_INTERNAL_SERIAL,
+    .SerialNumStrIndex      = NO_DESCRIPTOR,
 
     .NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
 };
