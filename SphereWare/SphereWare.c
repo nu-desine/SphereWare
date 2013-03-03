@@ -59,7 +59,7 @@
 #define LAST_PAD 39 
 #define LOOK_AT_PAD 0
 
-bool not_being_played[LAST_PAD+1];
+bool not_being_played[LAST_PAD+1+5];
 int16_t init_val[LAST_PAD+1];
 bool thresholds_raised = false;
 
@@ -71,7 +71,9 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
+        cli(); //disable interrupts
         not_being_played[pad] = true;
+        sei(); //enable interrupts
         _delay_ms(1);
         if (pad < 40)
         {
@@ -120,7 +122,7 @@ ISR(TIMER1_COMPA_vect)
     static int count = 0;
     bool none_played = true;
 
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    for (int pad = FIRST_PAD; pad <= (LAST_PAD + 5); pad++)
     {
         none_played &= not_being_played[pad];
     }
@@ -129,18 +131,18 @@ ISR(TIMER1_COMPA_vect)
     if (none_played)
     {
         count++;
-        if (count > 20000)
+        if (count > 2000)
         {
             count = 0;
-            //// turn LED red
-            //int led_channels[NUM_OF_LEDS][3];
-            //for (int i = 0; i < NUM_OF_LEDS; i++)
-            //{
-            //    led_channels[i][0] = 1023;
-            //    led_channels[i][1] = 0;
-            //    led_channels[i][2] = 0;
-            //}
-            //LED_WriteArray(led_channels);
+            // turn LED red
+            int led_channels[NUM_OF_LEDS][3];
+            for (int i = 0; i < NUM_OF_LEDS; i++)
+            {
+                led_channels[i][0] = 1023;
+                led_channels[i][1] = 0;
+                led_channels[i][2] = 0;
+            }
+            LED_WriteArray(led_channels);
             if (!thresholds_raised)
             {
                 for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
@@ -164,15 +166,15 @@ ISR(TIMER1_COMPA_vect)
                 thresholds_raised = false;
             }
             count = 0;
-            //// turn LED blue
-            //int led_channels[NUM_OF_LEDS][3];
-            //for (int i = 0; i < NUM_OF_LEDS; i++)
-            //{
-            //    led_channels[i][0] = 0;
-            //    led_channels[i][1] = 0;
-            //    led_channels[i][2] = 1023;
-            //}
-            //LED_WriteArray(led_channels);
+            // turn LED blue
+            int led_channels[NUM_OF_LEDS][3];
+            for (int i = 0; i < NUM_OF_LEDS; i++)
+            {
+                led_channels[i][0] = 0;
+                led_channels[i][1] = 0;
+                led_channels[i][2] = 1023;
+            }
+            LED_WriteArray(led_channels);
     }
 
 
@@ -211,7 +213,7 @@ int main(void)
 
     //detect wether this is an elite unit
     MUX_Select(5);
-    ButtonsAndDials_Read(5);
+    ButtonsAndDials_Read(5, NULL);
 
     while (1) 
     {
@@ -220,12 +222,15 @@ int main(void)
         {
             R2R_Write(r2r_val[pad]);
 
-            not_being_played[pad] = false;
+            //not_being_played[pad] = false;
+
+            cli(); //disable interrupts
             for (int i = 0; i < 5; i++)
             {
                 MUX_Select(i);
-                ButtonsAndDials_Read(i);
+                ButtonsAndDials_Read(i, &not_being_played[LAST_PAD+1]);
             }
+            sei(); //enable interrupts
 
             MUX_Select(pad);
 
@@ -285,7 +290,9 @@ int main(void)
 
 
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        cli(); //disable interrupts
                         not_being_played[pad] = false;
+                        sei(); //enable interrrupts
                     }
 
                 }
@@ -294,7 +301,9 @@ int main(void)
                     GenericHID_Write_PadData(pad, 0, 0);
                     velocity_sent[pad] = false;
                     init_val[pad] += 50;
+                    cli(); //disable interrupts
                     not_being_played[pad] = true;
+                    sei(); //enable interrrupts
                 }
             }
             else // if pad >= 40

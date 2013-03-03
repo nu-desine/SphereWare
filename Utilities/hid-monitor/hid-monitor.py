@@ -87,7 +87,7 @@ try:
                 #if velocity > 0:
                     #print index, pressure, velocity
                     #triggered.append((pad,velocity))
-            if (report[97] != 0):
+            if (report[97] != 0b1):
                 print "buttons: ",
                 print bin(report[97], 8);
             if (report[98] != 0):

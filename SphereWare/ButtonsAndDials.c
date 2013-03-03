@@ -17,7 +17,7 @@ void ButtonsAndDials_Init(void)
    normal operation.
 */
 
-void ButtonsAndDials_Read(uint8_t pad)
+void ButtonsAndDials_Read(uint8_t pad, bool * not_being_played)
 {
     typedef enum {
         SW3,
@@ -35,16 +35,19 @@ void ButtonsAndDials_Read(uint8_t pad)
         case SW2: //button 3
             buttons &= 0b00000111;
             buttons |= !(((PIND >> PD6)) & 1) << 3;
+            not_being_played[SW2] = !((buttons >> 3) & 1);
             GenericHID_Write_ButtonData(buttons);
             break;
         case SW3: // button 2
             buttons &= 0b00001011;
             buttons |= !(((PIND >> PD6)) & 1) << 2;
+            not_being_played[SW3] = !((buttons >> 2) & 1);
             GenericHID_Write_ButtonData(buttons);
             break;
         case SW4: // button 1
             buttons &= 0b00001101;
             buttons |= !(((PIND >> PD6)) & 1) << 1;
+            not_being_played[SW4] = !((buttons >> 1) & 1);
             GenericHID_Write_ButtonData(buttons);
             break;
         case ELITE:
@@ -53,12 +56,14 @@ void ButtonsAndDials_Read(uint8_t pad)
             GenericHID_Write_ButtonData(0xFF);
             break;
         case ENC1B:
-            Encoder_Read(0);
+            Encoder_Read(0, &not_being_played[ENC1B]);
             break;
         case ENC2B:
-            Encoder_Read(1);
+            Encoder_Read(1, &not_being_played[ENC2B]);
             break;
     }
+    if (!(buttons & 0b1)) //non elite, never report being played
+        not_being_played[elite_mux_num] = true;
 }
 
 /*
@@ -67,7 +72,7 @@ void ButtonsAndDials_Read(uint8_t pad)
    the upper byte in the state history and seeing if it has not had time to 
    return to 0b11 (unturned state) 4 reads in a row (!= 0xFF).
 */ 
-static void Encoder_Read(uint8_t number)
+static void Encoder_Read(uint8_t number, bool * not_being_turned)
 {
     static uint16_t dial_state[2] = {0, 0};
     uint8_t pins = PIND;
@@ -82,6 +87,7 @@ static void Encoder_Read(uint8_t number)
             else
                 GenericHID_Adjust_Dial(number, -1);
                 //GenericHID_Adjust_Dial_Debug(number, -1, dial_state[number]);
+            *not_being_turned = false;
             break;
         case 0b11111110:
             if (((dial_state[number] >> 8) & 0xFF) != 0xFF)
@@ -90,6 +96,9 @@ static void Encoder_Read(uint8_t number)
             else
                 GenericHID_Adjust_Dial(number, 1);
                 //GenericHID_Adjust_Dial_Debug(number, 1, dial_state[number]);
+            *not_being_turned = false;
             break;
+        default:
+            *not_being_turned = true;
     }
 }
