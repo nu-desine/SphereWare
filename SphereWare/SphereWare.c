@@ -56,7 +56,7 @@
 #include "SphereWare.h"
 
 #define FIRST_PAD 0  
-#define LAST_PAD 39 
+#define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
 bool not_being_played[LAST_PAD+1+5];
@@ -86,7 +86,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                 if (val > -400)
                 {
                     r2r_val[pad] = i;
-                    init_val[pad] = val + 100;
+                    init_val[pad] = val + 50;
                     break;
                 }
             }
@@ -134,13 +134,13 @@ ISR(TIMER1_COMPA_vect)
         if (count > 20000)
         {
             count = 0;
-            // turn LED red
+            // dim LED
             int led_channels[NUM_OF_LEDS][3];
             for (int i = 0; i < NUM_OF_LEDS; i++)
             {
-                led_channels[i][0] = 1023;
+                led_channels[i][0] = 0;
                 led_channels[i][1] = 0;
-                led_channels[i][2] = 0;
+                led_channels[i][2] = 127;
             }
             LED_WriteArray(led_channels);
             if (!thresholds_raised)
@@ -164,17 +164,17 @@ ISR(TIMER1_COMPA_vect)
                     init_val[pad] -= 100; 
                 }
                 thresholds_raised = false;
+                // turn LED blue
+                int led_channels[NUM_OF_LEDS][3];
+                for (int i = 0; i < NUM_OF_LEDS; i++)
+                {
+                    led_channels[i][0] = 0;
+                    led_channels[i][1] = 0;
+                    led_channels[i][2] = 1023;
+                }
+                LED_WriteArray(led_channels);
             }
             count = 0;
-            // turn LED blue
-            int led_channels[NUM_OF_LEDS][3];
-            for (int i = 0; i < NUM_OF_LEDS; i++)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = 0;
-                led_channels[i][2] = 1023;
-            }
-            LED_WriteArray(led_channels);
     }
 
 
@@ -234,22 +234,23 @@ int main(void)
 
             MUX_Select(pad);
 
-            if (thresholds_raised)
-            {
-                if (!(pad % 8))
-                    _delay_ms(1);
-                _delay_ms(1);
-            }
-            else
-            {
-                if (!(pad % 8))
-                    _delay_us(100);
-                _delay_us(100);
-            }
-
 
             if (pad < 40) 
             { 
+
+                if (thresholds_raised)
+                {
+                    if (!(pad % 8))
+                        _delay_ms(1);
+                    _delay_ms(1);
+                }
+                else
+                {
+                    if (!(pad % 8))
+                        _delay_us(100);
+                    _delay_us(100);
+                }
+
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
                 //GenericHID_Write_DebugData(pad, init_val[pad]);
 
@@ -310,6 +311,19 @@ int main(void)
             }
             else // if pad >= 40
             {
+                if (thresholds_raised)
+                {
+                    if (!(pad % 8))
+                        _delay_ms(1);
+                    _delay_ms(1);
+                }
+                else
+                {
+                    if (!(pad % 8))
+                        _delay_us(500);
+                    _delay_us(500);
+                }
+
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
 
                 if (val > 0)
