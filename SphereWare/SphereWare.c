@@ -273,7 +273,7 @@ int main(void)
                         cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity, velocity);
                         not_being_played[pad] = false;
-                        sei();
+                        sei(); //enable interrupts
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         init_val[pad] -= 50;
@@ -333,6 +333,7 @@ int main(void)
 
                         cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity * 2, velocity);
+                        sei(); //enable interrupts
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity * 2;
                     }
@@ -350,6 +351,7 @@ int main(void)
 
                         cli(); //disable interrupts
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
+                        sei(); //enable interrupts
                     }
 
                 }
@@ -357,6 +359,7 @@ int main(void)
                 {
                     cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
+                    sei(); //enable interrupts
                     velocity_sent[pad] = false;
                 }
             }
