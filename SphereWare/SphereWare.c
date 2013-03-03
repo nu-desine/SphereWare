@@ -270,11 +270,13 @@ int main(void)
                         velocity = peak >> 1;
                         if (velocity > 127)
                             velocity = 127;
+                        cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity, velocity);
+                        not_being_played[pad] = false;
+                        sei();
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         init_val[pad] -= 50;
-                        not_being_played[pad] = false;
                     }
                     else if (velocity_sent[pad])
                     {
@@ -289,8 +291,8 @@ int main(void)
                             filtered_val[pad] = 511;
 
 
-                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
                         cli(); //disable interrupts
+                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
                         not_being_played[pad] = false;
                         sei(); //enable interrrupts
                     }
@@ -298,12 +300,12 @@ int main(void)
                 }
                 else if (velocity_sent[pad])
                 {
-                    GenericHID_Write_PadData(pad, 0, 0);
-                    velocity_sent[pad] = false;
-                    init_val[pad] += 50;
                     cli(); //disable interrupts
+                    GenericHID_Write_PadData(pad, 0, 0);
                     not_being_played[pad] = true;
                     sei(); //enable interrrupts
+                    velocity_sent[pad] = false;
+                    init_val[pad] += 50;
                 }
             }
             else // if pad >= 40
@@ -329,6 +331,7 @@ int main(void)
                         if (velocity > 127)
                             velocity = 127;
 
+                        cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity * 2, velocity);
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity * 2;
@@ -345,12 +348,14 @@ int main(void)
                             filtered_val[pad] = 511;
                         }
 
+                        cli(); //disable interrupts
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
                     }
 
                 }
                 else if (velocity_sent[pad])
                 {
+                    cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
                     velocity_sent[pad] = false;
                 }
