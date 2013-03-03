@@ -187,7 +187,6 @@ ISR(TIMER1_COMPA_vect)
 int main(void)
 {
 
-    bool level_adjusted[LAST_PAD+1];
     int led_channels[NUM_OF_LEDS][3];
     uint8_t r2r_val[LAST_PAD+1];
     int16_t init_val_se[LAST_PAD+1];
@@ -210,7 +209,6 @@ int main(void)
     LED_WriteArray(led_channels);
 
     bool velocity_sent[LAST_PAD+1];
-    uint8_t buttons_and_dials;
 
     while (1) 
     {

@@ -88,14 +88,17 @@ try:
                     #print index, pressure, velocity
                     #triggered.append((pad,velocity))
             if (report[98] != 0):
-                if (report[98] > 240):
+                print "dial 1: ",
+                if (report[98] > 127):
                     print -(256 - report[98])
                 else:
                     print report[98]
-                print bin(report[103], 8),
-                print bin(report[102], 8),
-                print bin(report[101], 8),
-                print bin(report[100], 8)
+            if (report[99] != 0):
+                print "dial 2: ",
+                if (report[99] > 127):
+                    print -(256 - report[99])
+                else:
+                    print report[99]
             #for index in data:
             #    if (dataindex[1] > 0):
             #        sys.stdout.write("(%2i," % index)
