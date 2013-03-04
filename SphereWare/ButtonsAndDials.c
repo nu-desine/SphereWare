@@ -68,34 +68,22 @@ void ButtonsAndDials_Read(uint8_t pad, bool * not_being_played)
 
 /*
    The encoder has to be read at a reasonable rate. The previous pin state is 
-   shifted up to keep a history. Fast turns are detected by looking at 
-   the upper byte in the state history and seeing if it has not had time to 
-   return to 0b11 (unturned state) 4 reads in a row (!= 0xFF).
+   shifted up to keep a history. 
 */ 
 static void Encoder_Read(uint8_t number, bool * not_being_turned)
 {
-    static uint16_t dial_state[2] = {0, 0};
+    static uint8_t dial_state[2] = {0, 0};
     uint8_t pins = PIND;
     pins = ((pins >> PD6) & 1) << 1 | ((pins >> number) & 1);
     dial_state[number] = ((dial_state[number] << 2) | pins);
-    switch (dial_state[number] & 0xFF)
+    switch (dial_state[number])
     {
         case 0b11111101:
-            if (((dial_state[number] >> 8) & 0xFF) != 0xFF)
-                GenericHID_Adjust_Dial(number, -10);
-                //GenericHID_Adjust_Dial_Debug(number, -10, dial_state[number]);
-            else
-                GenericHID_Adjust_Dial(number, -1);
-                //GenericHID_Adjust_Dial_Debug(number, -1, dial_state[number]);
+            GenericHID_Adjust_Dial(number, -1);
             *not_being_turned = false;
             break;
         case 0b11111110:
-            if (((dial_state[number] >> 8) & 0xFF) != 0xFF)
-                GenericHID_Adjust_Dial(number, 10);
-                //GenericHID_Adjust_Dial_Debug(number, 10, dial_state[number]);
-            else
-                GenericHID_Adjust_Dial(number, 1);
-                //GenericHID_Adjust_Dial_Debug(number, 1, dial_state[number]);
+            GenericHID_Adjust_Dial(number, 1);
             *not_being_turned = false;
             break;
         default:
