@@ -59,7 +59,7 @@
 #define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
-bool not_being_played[LAST_PAD+1+5];
+bool being_played[LAST_PAD+1+5];
 int16_t init_val[LAST_PAD+1];
 bool thresholds_raised = false;
 
@@ -72,7 +72,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
         r2r_val[pad] = 0;
         MUX_Select(pad);
         cli(); //disable interrupts
-        not_being_played[pad] = true;
+        being_played[pad] = false;
         sei(); //enable interrupts
         _delay_ms(1);
         if (pad < 40)
@@ -119,32 +119,26 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
 //interrupt callback
 ISR(TIMER1_COMPA_vect)
 {
+    // detect wether being operated within last 20 seconds
+    // go into standby mode if not
     static int count = 0;
-    bool none_played = true;
+    bool any_played = false;
 
     for (int pad = FIRST_PAD; pad <= (LAST_PAD + 5); pad++)
     {
-        none_played &= not_being_played[pad];
+        any_played |= being_played[pad];
     }
 
 
-    if (none_played)
+    if (!any_played)
     {
         count++;
-        if (count > 20000)
+        if (count > 2000)
         {
             count = 0;
-            // dim LED
-            //int led_channels[NUM_OF_LEDS][3];
-            //for (int i = 0; i < NUM_OF_LEDS; i++)
-            //{
-            //    led_channels[i][0] = 0;
-            //    led_channels[i][1] = 0;
-            //    led_channels[i][2] = 127;
-            //}
-            //LED_WriteArray(led_channels);
             if (!thresholds_raised)
             {
+                LED_Set_Colour(0,0,127);
                 for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
                 {
                     init_val[pad] += 100; 
@@ -157,18 +151,19 @@ ISR(TIMER1_COMPA_vect)
     }
     else
     {
-            if (thresholds_raised)
+        if (thresholds_raised)
+        {
+            LED_Set_Colour(0,0,1023);
+            for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
             {
-                for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
-                {
-                    init_val[pad] -= 100; 
-                }
-                thresholds_raised = false;
+                init_val[pad] -= 100; 
             }
-            count = 0;
+            thresholds_raised = false;
+        }
+        count = 0;
     }
 
-
+    //service the USB interface, send the data over HID
     GenericHID_Task();
     USB_USBTask();
 } 
@@ -188,23 +183,22 @@ int main(void)
 
     SetupHardware();
 
-    sei();
-
-    Calibrate(r2r_val, init_val_se);
-
     // turn LED blue
-    for (int i = 0; i < NUM_OF_LEDS; i++)
-    {
-        led_channels[i][0] = 0;
-        led_channels[i][1] = 0;
-        led_channels[i][2] = 1023;
-    }
-
-    LED_WriteArray(led_channels);
+    LED_Set_Colour(0,0,1023);
 
     //detect wether this is an elite unit
     MUX_Select(5);
     ButtonsAndDials_Read(5, NULL);
+        
+    //set the buttons and dials to _not_ being played
+    for (int i = 0; i < 5; i++)
+    {
+        being_played[LAST_PAD+1+i] = false;
+    }
+
+    sei(); //enable interrupts
+
+    Calibrate(r2r_val, init_val_se);
 
     while (1) 
     {
@@ -214,13 +208,13 @@ int main(void)
         {
             R2R_Write(r2r_val[pad]);
 
-            //not_being_played[pad] = false;
+            //being_played[pad] = true;
 
             cli(); //disable interrupts
             for (int i = 0; i < 5; i++)
             {
                 MUX_Select(i);
-                ButtonsAndDials_Read(i, &not_being_played[LAST_PAD+1]);
+                ButtonsAndDials_Read(i, &being_played[LAST_PAD+1]);
             }
             sei(); //enable interrupts
 
@@ -263,11 +257,13 @@ int main(void)
                         velocity = peak >> 1;
                         if (velocity > 127)
                             velocity = 127;
+
                         cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity, velocity);
-                        not_being_played[pad] = false;
-                        led_sum += filtered_val[pad];
+                        //being_played[pad] = true;
                         sei(); //enable interrupts
+
+                        led_sum += filtered_val[pad];
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         init_val[pad] -= 50;
@@ -285,10 +281,11 @@ int main(void)
                             filtered_val[pad] = 511;
 
                         cli(); //disable interrupts
-                        led_sum += filtered_val[pad];
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
-                        not_being_played[pad] = false;
+                        //being_played[pad] = true;
                         sei(); //enable interrrupts
+
+                        led_sum += filtered_val[pad];
                     }
 
                 }
@@ -296,8 +293,9 @@ int main(void)
                 {
                     cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
-                    not_being_played[pad] = true;
+                    //being_played[pad] = false;
                     sei(); //enable interrrupts
+
                     velocity_sent[pad] = false;
                     init_val[pad] += 50;
                 }
@@ -339,10 +337,11 @@ int main(void)
                             velocity = 127;
 
                         cli(); //disable interrupts
-                        led_sum += filtered_val[pad];
                         GenericHID_Write_PadData(pad, velocity * 2, velocity);
-                        not_being_played[pad] = false;
+                        //being_played[pad] = false;
                         sei(); //enable interrupts
+
+                        led_sum += filtered_val[pad];
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity * 2;
                     }
@@ -360,9 +359,10 @@ int main(void)
 
 
                         cli(); //disable interrupts
-                        led_sum += filtered_val[pad];
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
                         sei(); //enable interrupts
+
+                        led_sum += filtered_val[pad];
                     }
 
                 }
@@ -370,8 +370,10 @@ int main(void)
                 {
                     cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
-                    not_being_played[pad] = true;
+                    //being_played[pad] = true;
+
                     sei(); //enable interrupts
+
                     velocity_sent[pad] = false;
                 }
 
@@ -379,34 +381,27 @@ int main(void)
             }
         }
 
-        if (led_sum > 0 && led_sum < 511)
-        {
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = 1023;
-                led_channels[i][2] = 0;
-            }
-        }
-        else if (led_sum > 510) 
-        {
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 1023;
-                led_channels[i][1] = 0;
-                led_channels[i][2] = 0;
-            }
-        }
-        else
-        {
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = 0;
-                led_channels[i][2] = 1023;
-            }
-        }
-        LED_WriteArray(led_channels);
+
+
+        //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
+//        if (led_sum <= 511)
+//        {
+//
+//            if (led_sum > 0)
+//                led_sum = (led_sum << 1) | 1;
+//            else
+//                led_sum = 0;
+//
+//            LED_Set_Colour(0, led_sum, (1023 - led_sum));
+//        }
+//        else  
+//        {
+//            if (led_sum > 1023)
+//                led_sum = 1023;
+//
+//            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+//        }
+//
     }
 }
 

@@ -29,9 +29,11 @@ int LED_GreenCommand;
 #define NUM_OF_LEDS 1
 
 void LED_Init(void);
-void LED_SendPacket(void);
-void LED_Latch(void);
-void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]);
+void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue);
+
+static void LED_SendPacket(void);
+static void LED_Latch(void);
+static void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]);
 
 // Example loop to cycle all LEDs through primary colors
 void LED_TestLoop(void);

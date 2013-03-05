@@ -30,7 +30,7 @@ void LED_Init() {
 
 }
 
-void LED_SendPacket() {
+static void LED_SendPacket() {
 
     if (LED_CommandMode == 0b01) {
         LED_RedCommand = 127;
@@ -55,7 +55,7 @@ void LED_SendPacket() {
     } 
 }
 
-void LED_Latch() {
+static void LED_Latch() {
 
     _delay_us(1);
     LATPORT |= (1 << LATPIN);
@@ -66,7 +66,7 @@ void LED_Latch() {
 
 }
 
-void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]) 
+static void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]) 
 {
 
 
@@ -127,3 +127,19 @@ void LED_TestLoop(void) {
     _delay_ms(200);
 
 }
+
+void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue)
+{
+    int led_channels[NUM_OF_LEDS][3];
+    for (int i = 0; i < NUM_OF_LEDS; i++) 
+    {
+        led_channels[i][0] = red;
+        led_channels[i][1] = green;
+        led_channels[i][2] = blue;
+    }
+    LED_WriteArray(led_channels);
+}
+    
+
+
+
