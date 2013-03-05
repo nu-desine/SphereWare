@@ -17,7 +17,9 @@
 
 */
 #include "LED.h"
+#include <avr/interrupt.h>
 
+uint16_t setting[3];
 // Set pins to outputs and initial states
 void LED_Init() {
     CLKREG |= (1 << CLKPIN);
@@ -28,15 +30,18 @@ void LED_Init() {
     LATPORT |= ~(1 << LATPIN);
     ENAPORT |= ~(1 << ENAPIN);
 
+    LED_Set_Current(127, 110, 110);
 }
 
 static void LED_SendPacket() {
 
+    cli(); //disable interrupts, the ISR is touching this data through LED_Set_Current
     if (LED_CommandMode == 0b01) {
-        LED_RedCommand = 127;
-        LED_GreenCommand = 110;
-        LED_BlueCommand = 110;
+        LED_RedCommand   = setting[0];
+        LED_GreenCommand = setting[1];
+        LED_BlueCommand  = setting[2];
     }
+    sei(); //enable interrupts
 
     led_command_packet = LED_CommandMode & 0b11;
     led_command_packet = (led_command_packet << 10)  | (LED_BlueCommand & 1023);
@@ -53,6 +58,13 @@ static void LED_SendPacket() {
         CLKPORT |= (1 << CLKPIN);
         CLKPORT &= ~(1 << CLKPIN); 
     } 
+}
+
+void LED_Set_Current(uint16_t red, uint16_t green, uint16_t blue)
+{
+    setting[0] = red;
+    setting[1] = green;
+    setting[2] = blue;
 }
 
 static void LED_Latch() {

@@ -30,6 +30,7 @@ int LED_GreenCommand;
 
 void LED_Init(void);
 void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue);
+void LED_Set_Current(uint16_t red, uint16_t green, uint16_t blue);
 
 static void LED_SendPacket(void);
 static void LED_Latch(void);

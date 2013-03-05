@@ -133,18 +133,18 @@ ISR(TIMER1_COMPA_vect)
     if (!any_played)
     {
         count++;
-        if (count > 2000)
+        if (count > 20000)
         {
             count = 0;
             if (!thresholds_raised)
             {
-                LED_Set_Colour(0,0,127);
                 for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
                 {
                     init_val[pad] += 100; 
                 }
                 thresholds_raised = true;
             }
+            LED_Set_Current(0,0,0);
 
         }
 
@@ -153,13 +153,13 @@ ISR(TIMER1_COMPA_vect)
     {
         if (thresholds_raised)
         {
-            LED_Set_Colour(0,0,1023);
             for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
             {
                 init_val[pad] -= 100; 
             }
             thresholds_raised = false;
         }
+        LED_Set_Current(127,110,110);
         count = 0;
     }
 
@@ -208,8 +208,6 @@ int main(void)
         {
             R2R_Write(r2r_val[pad]);
 
-            //being_played[pad] = true;
-
             cli(); //disable interrupts
             for (int i = 0; i < 5; i++)
             {
@@ -219,7 +217,6 @@ int main(void)
             sei(); //enable interrupts
 
             MUX_Select(pad);
-
 
             if (pad < 40) 
             { 
@@ -260,7 +257,7 @@ int main(void)
 
                         cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity, velocity);
-                        //being_played[pad] = true;
+                        being_played[pad] = true;
                         sei(); //enable interrupts
 
                         led_sum += filtered_val[pad];
@@ -282,7 +279,7 @@ int main(void)
 
                         cli(); //disable interrupts
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
-                        //being_played[pad] = true;
+                        being_played[pad] = true;
                         sei(); //enable interrrupts
 
                         led_sum += filtered_val[pad];
@@ -293,7 +290,7 @@ int main(void)
                 {
                     cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
-                    //being_played[pad] = false;
+                    being_played[pad] = false;
                     sei(); //enable interrrupts
 
                     velocity_sent[pad] = false;
@@ -338,7 +335,7 @@ int main(void)
 
                         cli(); //disable interrupts
                         GenericHID_Write_PadData(pad, velocity * 2, velocity);
-                        //being_played[pad] = false;
+                        being_played[pad] = false;
                         sei(); //enable interrupts
 
                         led_sum += filtered_val[pad];
@@ -370,7 +367,7 @@ int main(void)
                 {
                     cli(); //disable interrupts
                     GenericHID_Write_PadData(pad, 0, 0);
-                    //being_played[pad] = true;
+                    being_played[pad] = true;
 
                     sei(); //enable interrupts
 
@@ -381,27 +378,25 @@ int main(void)
             }
         }
 
-
-
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
-//        if (led_sum <= 511)
-//        {
-//
-//            if (led_sum > 0)
-//                led_sum = (led_sum << 1) | 1;
-//            else
-//                led_sum = 0;
-//
-//            LED_Set_Colour(0, led_sum, (1023 - led_sum));
-//        }
-//        else  
-//        {
-//            if (led_sum > 1023)
-//                led_sum = 1023;
-//
-//            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
-//        }
-//
+        if (led_sum <= 511)
+        {
+
+            if (led_sum > 0)
+                led_sum = (led_sum << 1) | 1;
+            else
+                led_sum = 0;
+
+            LED_Set_Colour(0, led_sum, (1023 - led_sum));
+        }
+        else  
+        {
+            if (led_sum > 1023)
+                led_sum = 1023;
+
+            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+        }
+
     }
 }
 
