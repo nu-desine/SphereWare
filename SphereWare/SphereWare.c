@@ -62,6 +62,7 @@
 bool being_played[LAST_PAD+1+5];
 int16_t init_val[LAST_PAD+1];
 bool thresholds_raised = false;
+bool anti_sticky_applied[LAST_PAD+1];
 
 //this is the calibration procedure
 void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
@@ -74,13 +75,13 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
         cli(); //disable interrupts
         being_played[pad] = false;
         sei(); //enable interrupts
-        _delay_ms(1);
+        _delay_us(100);
         if (pad < 40)
         {
             for (int i = 0; i < 64; i++)
             {
                 R2R_Write(i);
-                _delay_ms(1);
+                _delay_us(100);
                 val = -ADC_Read(DIFF_1_X10, ADC4);
 
                 if (val > -400)
@@ -89,7 +90,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                     if (pad < 8)
                         init_val[pad] = val + 100;
                     else
-                        init_val[pad] = val + 50;
+                        init_val[pad] = val + 60;
                     break;
                 }
             }
@@ -99,13 +100,13 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
             for (int i = 0; i < 64; i++)
             {
                 R2R_Write(i);
-                _delay_ms(1);
+                _delay_us(100);
                 val = -ADC_Read(DIFF_1_X10, ADC4);
 
                 if (val > 40)
                 {
                     r2r_val[pad] = i;
-                    init_val[pad] = val + 120;
+                    init_val[pad] = val + 80;
                     break;
                 }
             }
@@ -203,6 +204,8 @@ int main(void)
 
     Calibrate(r2r_val, init_val_se);
 
+    uint8_t sticky_count[LAST_PAD+1];
+
     while (1) 
     {
         uint16_t led_sum = 0;
@@ -213,9 +216,17 @@ int main(void)
             if (!bit_is_set(PINE, PE2))
             {
                 
+                // turn LED blue
+                LED_Set_Colour(0,0,1023);
+
+                cli();
                 GenericHID_Clear();
                 Calibrate(r2r_val, init_val_se);
-                
+                memset(being_played, 0, sizeof(bool) * (48 + 5));
+                memset(velocity_sent, 0, sizeof(bool) * 48);
+                sei();
+
+                while(!bit_is_set(PINE, PE2)); //wait
             }
             R2R_Write(r2r_val[pad]);
 
@@ -271,22 +282,27 @@ int main(void)
                         being_played[pad] = true;
                         sei(); //enable interrupts
 
-                        led_sum += filtered_val[pad];
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
+                        led_sum += filtered_val[pad];
                         init_val[pad] -= 50;
                     }
                     else if (velocity_sent[pad])
                     {
-                        if (val > (480 - init_val[pad]))
-                            val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
+                        filtered_val[pad] = ((filtered_val[pad] * 0.50) + (val * 0.50));
 
 
-                        filtered_val[pad] = ((filtered_val[pad] * 0.70) + (val * 0.30));
-
-
-                        if (filtered_val[pad] > 511)
+                        if (filtered_val[pad] >= 511)
+                        {
                             filtered_val[pad] = 511;
+                            if (!anti_sticky_applied[pad])
+                            {
+                                cli();
+                                init_val[pad] += 50;
+                                anti_sticky_applied[pad] = true;
+                                sei();
+                            }
+                        }
 
                         cli(); //disable interrupts
                         GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
@@ -300,6 +316,16 @@ int main(void)
                 else if (velocity_sent[pad])
                 {
                     cli(); //disable interrupts
+                    if (anti_sticky_applied[pad])
+                    {
+                        sticky_count[pad]++;
+                        if (sticky_count[pad] > 100)
+                        {
+                            init_val[pad] -= 50;
+                            anti_sticky_applied[pad] = false;
+                            sticky_count[pad] = 0;
+                        }
+                    }
                     GenericHID_Write_PadData(pad, 0, 0);
                     being_played[pad] = false;
                     sei(); //enable interrrupts
@@ -319,8 +345,8 @@ int main(void)
                 else
                 {
                     if (!(pad % 8))
-                        _delay_us(200);
-                    _delay_us(200);
+                        _delay_us(100);
+                    _delay_us(100);
                 }
 
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
@@ -358,7 +384,19 @@ int main(void)
                         if (val > (480 - init_val[pad]))
                             val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
 
-                        filtered_val[pad] = ((filtered_val[pad] * 0.70) + ((val * 2) * 0.30));
+                        filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
+
+                        if (filtered_val[pad] >= 511)
+                        {
+                            filtered_val[pad] = 511;
+                            if (!anti_sticky_applied[pad])
+                            {
+                                cli();
+                                init_val[pad] += 50;
+                                anti_sticky_applied[pad] = true;
+                                sei();
+                            }
+                        }
 
                         if (filtered_val[pad] > 511)
                         {
@@ -377,8 +415,18 @@ int main(void)
                 else if (velocity_sent[pad])
                 {
                     cli(); //disable interrupts
+                    if (anti_sticky_applied[pad])
+                    {
+                        sticky_count[pad]++;
+                        if (sticky_count[pad] > 100)
+                        {
+                            init_val[pad] -= 50;
+                            anti_sticky_applied[pad] = false;
+                            sticky_count[pad] = 0;
+                        }
+                    }
                     GenericHID_Write_PadData(pad, 0, 0);
-                    being_played[pad] = true;
+                    being_played[pad] = false;
 
                     sei(); //enable interrupts
 
