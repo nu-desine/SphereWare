@@ -81,7 +81,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
             for (int i = 0; i < 64; i++)
             {
                 R2R_Write(i);
-                _delay_us(100);
+                _delay_us(500);
                 val = -ADC_Read(DIFF_1_X10, ADC4);
 
                 if (val > -400)
@@ -89,35 +89,34 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                     r2r_val[pad] = i;
                     if (pad < 8)
                         init_val[pad] = val + 100;
-                    else if (pad > 15 && pad < 24)
-                        init_val[pad] = val + 40;
                     else
                         init_val[pad] = val + 60;
                     break;
                 }
             }
         }
-        else //if pad >= 40
-        {
-            for (int i = 0; i < 64; i++)
-            {
-                R2R_Write(i);
-                _delay_us(100);
-                val = -ADC_Read(DIFF_1_X10, ADC4);
+        //else //if pad >= 40
+        //{
+        //    for (int i = 0; i < 64; i++)
+        //    {
+        //        R2R_Write(i);
+        //        _delay_us(100);
+        //        val = -ADC_Read(DIFF_1_X10, ADC4);
 
-                if (val > 40)
-                {
-                    r2r_val[pad] = i;
-                    init_val[pad] = val + 80;
-                    break;
-                }
-            }
-        }
+        //        if (val > 40)
+        //        {
+        //            r2r_val[pad] = i;
+        //            init_val[pad] = val + 80;
+        //            break;
+        //        }
+        //    }
+        //}
     }
     for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
     {
         MUX_Select(pad);
-        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4);
+        _delay_us(500);
+        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 30; 
     }
 
 }
@@ -347,95 +346,29 @@ int main(void)
                 else
                 {
                     if (!(pad % 8))
-                        _delay_us(100);
-                    _delay_us(100);
+                        _delay_us(200);
+                    _delay_us(200);
                 }
 
-                int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+                int16_t val = init_val_se[pad] - ADC_Read(SINGLE_ENDED, ADC4);
 
                 if (val > 0)
                 {
-                    if (!velocity_sent[pad])
-                    {
-                        int16_t velocity;
-                        int16_t peak = val;
-
-                        for (int i = 0; i < 200; i++)
-                        {
-                            val = ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
-                            if (val > peak)
-                            {
-                                peak = val;
-                            }
-                        }
-                        velocity = peak;
-                        if (velocity > 127)
-                            velocity = 127;
-
-                        cli(); //disable interrupts
-                        GenericHID_Write_PadData(pad, velocity * 2, velocity);
-                        being_played[pad] = false;
-                        sei(); //enable interrupts
-
-                        led_sum += filtered_val[pad];
-                        velocity_sent[pad] = true;
-                        filtered_val[pad] = velocity * 2;
-                    }
-                    else if (velocity_sent[pad])
-                    {
-                        if (val > (480 - init_val[pad]))
-                            val = -ADC_Read(DIFF_1_X1, ADC4) - 48 + 480 - init_val[pad];
-
-                        filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
-
-                        if (filtered_val[pad] >= 511)
-                        {
-                            filtered_val[pad] = 511;
-                            if (!anti_sticky_applied[pad])
-                            {
-                                cli();
-                                init_val[pad] += 50;
-                                anti_sticky_applied[pad] = true;
-                                sei();
-                            }
-                        }
-
-                        if (filtered_val[pad] > 511)
-                        {
-                            filtered_val[pad] = 511;
-                        }
-
-
-                        cli(); //disable interrupts
-                        GenericHID_Write_PressureOnly(pad, filtered_val[pad]);
-                        sei(); //enable interrupts
-
-                        led_sum += filtered_val[pad];
-                    }
-
+                    cli(); //disable interrupts
+                    filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
+                    if (filtered_val[pad] > 511)
+                        filtered_val[pad] = 511;
+                    GenericHID_Write_PadData(pad, filtered_val[pad], 127);
+                    being_played[pad] = true;
+                    sei(); //enable interrupts
                 }
-                else if (velocity_sent[pad])
+                else
                 {
                     cli(); //disable interrupts
-                    if (anti_sticky_applied[pad])
-                    {
-                        sticky_count[pad]++;
-                        if (sticky_count[pad] > 100)
-                        {
-                            init_val[pad] -= 50;
-                            anti_sticky_applied[pad] = false;
-                            sticky_count[pad] = 0;
-                        }
-                    }
                     GenericHID_Write_PadData(pad, 0, 0);
                     being_played[pad] = false;
-
                     sei(); //enable interrupts
-
-                    velocity_sent[pad] = false;
                 }
-
-
             }
         }
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
