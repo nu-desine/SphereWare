@@ -30,7 +30,7 @@ void LED_Init() {
     LATPORT |= ~(1 << LATPIN);
     ENAPORT |= ~(1 << ENAPIN);
 
-    LED_Set_Current(127, 110, 110);
+    LED_Set_Current(127, 127, 127);
 }
 
 static void LED_SendPacket() {

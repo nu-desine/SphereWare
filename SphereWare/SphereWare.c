@@ -89,6 +89,8 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                     r2r_val[pad] = i;
                     if (pad < 8)
                         init_val[pad] = val + 100;
+                    else if (pad > 15 && pad < 24)
+                        init_val[pad] = val + 40;
                     else
                         init_val[pad] = val + 60;
                     break;
@@ -163,7 +165,7 @@ ISR(TIMER1_COMPA_vect)
             }
             thresholds_raised = false;
         }
-        LED_Set_Current(127,110,110);
+        LED_Set_Current(127,127,127);
         count = 0;
     }
 
@@ -436,7 +438,6 @@ int main(void)
 
             }
         }
-
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
         if (led_sum <= 511)
         {
@@ -450,11 +451,19 @@ int main(void)
         }
         else  
         {
+            led_sum -= 511;
+
+            if (led_sum > 0)
+                led_sum = (led_sum << 1) | 1;
+            else
+                led_sum = 0;
+
             if (led_sum > 1023)
                 led_sum = 1023;
 
             LED_Set_Colour(led_sum, (1023 - led_sum), 0);
         }
+
 
     }
 }
