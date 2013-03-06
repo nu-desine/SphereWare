@@ -118,6 +118,11 @@ void GenericHID_Adjust_Dial(uint8_t dial_number, int8_t amount)
 
 }
 
+void GenericHID_Clear(void)
+{
+    memset(&hid_in_buffer[1], 0, 95);
+}
+
 void GenericHID_Adjust_Dial_Debug(uint8_t dial_number, int8_t amount, uint16_t state)
 {
 

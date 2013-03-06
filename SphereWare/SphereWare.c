@@ -86,7 +86,10 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                 if (val > -400)
                 {
                     r2r_val[pad] = i;
-                    init_val[pad] = val + 50;
+                    if (pad < 8)
+                        init_val[pad] = val + 100;
+                    else
+                        init_val[pad] = val + 50;
                     break;
                 }
             }
@@ -102,7 +105,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                 if (val > 40)
                 {
                     r2r_val[pad] = i;
-                    init_val[pad] = val + 100;
+                    init_val[pad] = val + 120;
                     break;
                 }
             }
@@ -206,6 +209,14 @@ int main(void)
 
         for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
         {
+
+            if (!bit_is_set(PINE, PE2))
+            {
+                
+                GenericHID_Clear();
+                Calibrate(r2r_val, init_val_se);
+                
+            }
             R2R_Write(r2r_val[pad]);
 
             cli(); //disable interrupts
