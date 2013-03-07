@@ -57,7 +57,6 @@
 
 #define FIRST_PAD 0  
 #define LAST_PAD 47 
-#define LOOK_AT_PAD 0
 
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
@@ -77,14 +76,14 @@ void Calibrate (void)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
-        _delay_us(100);
+        Delay(pad);
         filtered_val[pad] = 0;
         if (pad < 40)
         {
             for (int i = 0; i < 64; i++)
             {
                 R2R_Write(i);
-                _delay_us(500);
+                Delay(pad);
                 val = -ADC_Read(DIFF_1_X10, ADC4);
 
                 if (val > -400)
@@ -102,9 +101,16 @@ void Calibrate (void)
     for (int pad = 40; pad <= LAST_PAD; pad++)
     {
         MUX_Select(pad);
-        _delay_us(500);
+        Delay(pad);
         init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 20; 
     }
+    cli(); //disable interrupt
+    GenericHID_Clear();
+    memset(being_played,        0, sizeof(bool) * (48 + 5));
+    sei(); //enable interrupt
+    memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
+    memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
+    memset(velocity_sent,       0, sizeof(bool) * 48);
 
 }
 
@@ -120,7 +126,6 @@ ISR(TIMER1_COMPA_vect)
     {
         any_played |= being_played[pad];
     }
-
 
     if (!any_played)
     {
@@ -161,6 +166,40 @@ ISR(TIMER1_COMPA_vect)
 } 
 
 
+void Delay(uint8_t pad)
+{
+    if (pad < 40)
+    {
+        if (thresholds_raised)
+        {
+            if (!(pad % 8))
+                _delay_ms(1);
+            _delay_ms(1);
+        }
+        else
+        {
+            if (!(pad % 8))
+                _delay_us(100);
+            _delay_us(100);
+        }
+    } 
+    else 
+    {
+        if (thresholds_raised)
+        {
+            if (!(pad % 8))
+                _delay_ms(2);
+            _delay_ms(2);
+        }
+        else
+        {
+            if (!(pad % 8))
+                _delay_us(200);
+            _delay_us(200);
+        }
+    }
+}
+
 /** Main program entry point. This routine configures the hardware required by the application, then
  *  enters a loop to run the application tasks in sequence.
  */
@@ -174,8 +213,6 @@ int main(void)
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
     memset(r2r_val,             0, sizeof(uint8_t) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
-    memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
-    memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
     memset(being_played,        0, sizeof(bool) * (LAST_PAD+5+1));  
             
     SetupHardware();
@@ -200,17 +237,10 @@ int main(void)
 
             if (!bit_is_set(PINE, PE2))
             {
-                
                 // turn LED blue
                 LED_Set_Colour(0,0,1023);
 
-                cli();
-                GenericHID_Clear();
                 Calibrate();
-                memset(being_played, 0, sizeof(bool) * (48 + 5));
-                memset(velocity_sent, 0, sizeof(bool) * 48);
-                sei();
-
                 while(!bit_is_set(PINE, PE2)); //wait
             }
             R2R_Write(r2r_val[pad]);
@@ -224,31 +254,17 @@ int main(void)
             sei(); //enable interrupts
 
             MUX_Select(pad);
+            Delay(pad);
 
             if (pad < 40) 
             { 
-
-                if (thresholds_raised)
-                {
-                    if (!(pad % 8))
-                        _delay_ms(1);
-                    _delay_ms(1);
-                }
-                else
-                {
-                    if (!(pad % 8))
-                        _delay_us(100);
-                    _delay_us(100);
-                }
-
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
-                //GenericHID_Write_DebugData(pad, init_val[pad]);
 
                 if (val > 0)
                 {
                     if (!velocity_sent[pad])
                     {
-                        int16_t velocity;
+                        int8_t velocity;
                         int16_t peak = val;
                         for (int i = 0; i < 200; i++)
                         {
@@ -321,18 +337,6 @@ int main(void)
             }
             else // if pad >= 40
             {
-                if (thresholds_raised)
-                {
-                    if (!(pad % 8))
-                        _delay_ms(2);
-                    _delay_ms(2);
-                }
-                else
-                {
-                    if (!(pad % 8))
-                        _delay_us(200);
-                    _delay_us(200);
-                }
 
                 int16_t val = init_val_se[pad] - ADC_Read(SINGLE_ENDED, ADC4);
 
@@ -358,10 +362,10 @@ int main(void)
                         }
                     }
 
-                    led_sum += filtered_val[pad];
                     GenericHID_Write_PadData(pad, filtered_val[pad], 127);
                     being_played[pad] = true;
                     sei(); //enable interrupts
+                    led_sum += filtered_val[pad];
                 }
                 else
                 {
@@ -389,23 +393,19 @@ int main(void)
             }
         }
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
-        if (led_sum <= 511)
-        {
-            if (led_sum > 0)
-                led_sum = (led_sum << 1) | 1;
-            else
-                led_sum = 0;
 
+        if (led_sum > 0)
+            led_sum = (led_sum << 1) | 1;
+        else
+            led_sum = 0;
+
+        if (led_sum <= 1023)
+        {
             LED_Set_Colour(0, led_sum, (1023 - led_sum));
         }
         else  
         {
-            led_sum -= 511;
-
-            if (led_sum > 0)
-                led_sum = (led_sum << 1) | 1;
-            else
-                led_sum = 0;
+            led_sum -= 1022;
 
             if (led_sum > 1023)
                 led_sum = 1023;
