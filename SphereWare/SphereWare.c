@@ -63,12 +63,14 @@ bool being_played[LAST_PAD+1+5];
 int16_t init_val[LAST_PAD+1];
 bool thresholds_raised = false;
 bool anti_sticky_applied[LAST_PAD+1];
+bool hysteris_applied[LAST_PAD+1];
+int16_t filtered_val[LAST_PAD+1];
 
 //this is the calibration procedure
 void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
 {
     int16_t val;
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    for (int pad = FIRST_PAD; pad <= 40; pad++)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
@@ -76,6 +78,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
         being_played[pad] = false;
         sei(); //enable interrupts
         _delay_us(100);
+        filtered_val[pad] = 0;
         if (pad < 40)
         {
             for (int i = 0; i < 64; i++)
@@ -90,7 +93,7 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                     if (pad < 8)
                         init_val[pad] = val + 100;
                     else
-                        init_val[pad] = val + 60;
+                        init_val[pad] = val + 70;
                     break;
                 }
             }
@@ -112,11 +115,11 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
         //    }
         //}
     }
-    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    for (int pad = 40; pad <= LAST_PAD; pad++)
     {
         MUX_Select(pad);
         _delay_us(500);
-        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 30; 
+        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 20; 
     }
 
 }
@@ -183,7 +186,6 @@ int main(void)
     int led_channels[NUM_OF_LEDS][3];
     uint8_t r2r_val[LAST_PAD+1];
     int16_t init_val_se[LAST_PAD+1];
-    int16_t filtered_val[LAST_PAD+1];
     bool velocity_sent[LAST_PAD+1];
 
     SetupHardware();
@@ -354,10 +356,25 @@ int main(void)
 
                 if (val > 0)
                 {
+                    if (!hysteris_applied[pad])
+                    {
+                        init_val_se[pad] -= 5;
+                        hysteris_applied[pad] = true;
+                    }
                     cli(); //disable interrupts
                     filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
-                    if (filtered_val[pad] > 511)
+
+                    if (filtered_val[pad] >= 511)
+                    {
                         filtered_val[pad] = 511;
+                        if (!anti_sticky_applied[pad])
+                        {
+                            cli();
+                            init_val_se[pad] -= 30;
+                            anti_sticky_applied[pad] = true;
+                            sei();
+                        }
+                    }
 
                     led_sum += filtered_val[pad];
                     GenericHID_Write_PadData(pad, filtered_val[pad], 127);
@@ -366,7 +383,23 @@ int main(void)
                 }
                 else
                 {
+                    if (hysteris_applied[pad])
+                    {
+                        init_val_se[pad] += 5;
+                        hysteris_applied[pad] = false;
+                    }
+
                     cli(); //disable interrupts
+                    if (anti_sticky_applied[pad])
+                    {
+                        sticky_count[pad]++;
+                        if (sticky_count[pad] > 400)
+                        {
+                            init_val_se[pad] += 30;
+                            anti_sticky_applied[pad] = false;
+                            sticky_count[pad] = 0;
+                        }
+                    }
                     GenericHID_Write_PadData(pad, 0, 0);
                     being_played[pad] = false;
                     sei(); //enable interrupts
