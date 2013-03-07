@@ -358,6 +358,8 @@ int main(void)
                     filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
                     if (filtered_val[pad] > 511)
                         filtered_val[pad] = 511;
+
+                    led_sum += filtered_val[pad];
                     GenericHID_Write_PadData(pad, filtered_val[pad], 127);
                     being_played[pad] = true;
                     sei(); //enable interrupts
