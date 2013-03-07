@@ -58,6 +58,19 @@
 #define FIRST_PAD 0  
 #define LAST_PAD 47 
 
+#define THRESHOLD_UNDER_8 100
+#define THRESHOLD 70
+#define SETTLING_TIME 100
+#define HYSTERISIS_ADJUST 0
+#define STICKY_TIMEOUT 100
+#define ANTI_STICKY_ADJUST 50
+
+#define THRESHOLD_OVER_39 20
+#define SETTLING_TIME_OVER_39 200
+#define HYSTERISIS_ADJUST_OVER_39 5
+#define ANTI_STICKY_ADJUST_OVER_39 50
+#define STICKY_TIMEOUT_OVER_39 100
+
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
 int16_t init_val_se[LAST_PAD+1]; //single ended
@@ -90,9 +103,9 @@ void Calibrate (void)
                 {
                     r2r_val[pad] = i;
                     if (pad < 8)
-                        init_val[pad] = val + 100;
+                        init_val[pad] = val + THRESHOLD_UNDER_8;
                     else
-                        init_val[pad] = val + 70;
+                        init_val[pad] = val + THRESHOLD;
                     break;
                 }
             }
@@ -102,7 +115,7 @@ void Calibrate (void)
     {
         MUX_Select(pad);
         Delay(pad);
-        init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 20; 
+        init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - THRESHOLD_OVER_39; 
     }
     cli(); //disable interrupt
     GenericHID_Clear();
@@ -111,6 +124,7 @@ void Calibrate (void)
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
     memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * 48);
+    memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
 
 }
 
@@ -179,8 +193,8 @@ void Delay(uint8_t pad)
         else
         {
             if (!(pad % 8))
-                _delay_us(100);
-            _delay_us(100);
+                _delay_us(SETTLING_TIME);
+            _delay_us(SETTLING_TIME);
         }
     } 
     else 
@@ -194,8 +208,8 @@ void Delay(uint8_t pad)
         else
         {
             if (!(pad % 8))
-                _delay_us(200);
-            _delay_us(200);
+                _delay_us(SETTLING_TIME_OVER_39);
+            _delay_us(SETTLING_TIME_OVER_39);
         }
     }
 }
@@ -207,14 +221,8 @@ int main(void)
 {
 
     uint8_t sticky_count[LAST_PAD+1];
-    memset(sticky_count,        0, sizeof(uint8_t) * (LAST_PAD+1));  
+    memset(sticky_count, 0, sizeof(uint8_t) * (LAST_PAD+1));  
 
-    memset(init_val,            0, sizeof(int16_t) * (LAST_PAD+1));
-    memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
-    memset(r2r_val,             0, sizeof(uint8_t) * (LAST_PAD+1));
-    memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
-    memset(being_played,        0, sizeof(bool) * (LAST_PAD+5+1));  
-            
     SetupHardware();
 
     // turn LED blue
@@ -299,7 +307,7 @@ int main(void)
                             if (!anti_sticky_applied[pad])
                             {
                                 cli();
-                                init_val[pad] += 50;
+                                init_val[pad] += ANTI_STICKY_ADJUST;
                                 anti_sticky_applied[pad] = true;
                                 sei();
                             }
@@ -320,9 +328,9 @@ int main(void)
                     if (anti_sticky_applied[pad])
                     {
                         sticky_count[pad]++;
-                        if (sticky_count[pad] > 100)
+                        if (sticky_count[pad] > STICKY_TIMEOUT)
                         {
-                            init_val[pad] -= 50;
+                            init_val[pad] -= ANTI_STICKY_ADJUST;
                             anti_sticky_applied[pad] = false;
                             sticky_count[pad] = 0;
                         }
@@ -344,7 +352,7 @@ int main(void)
                 {
                     if (!hysteris_applied[pad])
                     {
-                        init_val_se[pad] -= 5;
+                        init_val_se[pad] -= HYSTERISIS_ADJUST_OVER_39;
                         hysteris_applied[pad] = true;
                     }
                     cli(); //disable interrupts
@@ -356,7 +364,7 @@ int main(void)
                         if (!anti_sticky_applied[pad])
                         {
                             cli();
-                            init_val_se[pad] -= 30;
+                            init_val_se[pad] -= ANTI_STICKY_ADJUST_OVER_39;
                             anti_sticky_applied[pad] = true;
                             sei();
                         }
@@ -371,7 +379,7 @@ int main(void)
                 {
                     if (hysteris_applied[pad])
                     {
-                        init_val_se[pad] += 5;
+                        init_val_se[pad] += HYSTERISIS_ADJUST_OVER_39;
                         hysteris_applied[pad] = false;
                     }
 
@@ -379,9 +387,9 @@ int main(void)
                     if (anti_sticky_applied[pad])
                     {
                         sticky_count[pad]++;
-                        if (sticky_count[pad] > 400)
+                        if (sticky_count[pad] > STICKY_TIMEOUT_OVER_39)
                         {
-                            init_val_se[pad] += 30;
+                            init_val_se[pad] += ANTI_STICKY_ADJUST_OVER_39;
                             anti_sticky_applied[pad] = false;
                             sticky_count[pad] = 0;
                         }
