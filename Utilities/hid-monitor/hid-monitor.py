@@ -72,17 +72,20 @@ data = {}
 velocities = [0] * 48
 prev_report = 0
 
+dial_state_1 = 0;
+dial_state_2 = 0;
+
 triggered = []
 try:
     while 1:
-        report = h.read(98)
+        report = h.read(101)
         #print len(report)
         if report[0] == 0x01:
-            for index, first_byte in enumerate(report[1:-1:2]):
+            for index, first_byte in enumerate(report[1:97:2]):
                 second_byte = report[index * 2 + 2]
                 velocity = first_byte & 0x7F
                 pressure = (first_byte >> 7) | (second_byte << 1)
-                data[index] =  (pressure, velocity)
+                data[index] = (pressure, velocity)
                 if velocity > 0:
                     triggered.append((pad,velocity))
             for index in data:
@@ -90,6 +93,33 @@ try:
                 sys.stdout.write("%3i," % data[index][0])
                 sys.stdout.write("%3i)" % data[index][1])
                 sys.stdout.write("     ")
+
+            buttons_and_dials =  report[97:101]
+
+            button_1 = (buttons_and_dials[0] & 0b00000010) >> 1
+            button_2 = (buttons_and_dials[0] & 0b00000100) >> 2 
+            button_3 = (buttons_and_dials[0] & 0b00001000) >> 3
+
+            sys.stdout.write("(%2i," % button_1)
+            sys.stdout.write("%3i," % button_2)
+            sys.stdout.write("%3i)" % button_3)
+            sys.stdout.write("     ")
+
+            dials = buttons_and_dials[1:3]
+
+            dial_1 = dials[0] - 256 if dials[0] > 0x7F else dials[0]
+            dial_2 = dials[1] - 256 if dials[1] > 0x7F else dials[1]
+
+            dial_state_1 += dial_1
+            dial_state_2 += dial_2
+
+
+            sys.stdout.write("(%2s," % "d")
+            sys.stdout.write("%3i," % dial_state_1)
+            sys.stdout.write("%3i)" % dial_state_2)
+            sys.stdout.write("     ")
+
+            
                 #if count > 5:
                 #    sys.stdout.write("\r\n")
                 #    count = 0
