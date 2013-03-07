@@ -62,7 +62,7 @@
 
     /* Function Prototypes: */
         void SetupHardware(void);
-        void HID_Task(void);
+        void Calibrate (void);
 
         void EVENT_USB_Device_Connect(void);
         void EVENT_USB_Device_Disconnect(void);
@@ -72,8 +72,6 @@
 
         void ProcessGenericHIDReport(uint8_t* DataArray);
         void CreateGenericHIDReport(uint8_t* DataArray);
-
-        int16_t prev_val[48];
 
 #endif
 

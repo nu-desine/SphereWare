@@ -59,24 +59,24 @@
 #define LAST_PAD 47 
 #define LOOK_AT_PAD 0
 
-bool being_played[LAST_PAD+1+5];
+int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
-bool thresholds_raised = false;
+int16_t init_val_se[LAST_PAD+1]; //single ended
+uint8_t r2r_val[LAST_PAD+1];
 bool anti_sticky_applied[LAST_PAD+1];
 bool hysteris_applied[LAST_PAD+1];
-int16_t filtered_val[LAST_PAD+1];
+bool velocity_sent[LAST_PAD+1];
+bool being_played[LAST_PAD+1+5]; //+5 to include elite controls
+bool thresholds_raised = false;
 
 //this is the calibration procedure
-void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
+void Calibrate (void)
 {
     int16_t val;
     for (int pad = FIRST_PAD; pad <= 40; pad++)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
-        cli(); //disable interrupts
-        being_played[pad] = false;
-        sei(); //enable interrupts
         _delay_us(100);
         filtered_val[pad] = 0;
         if (pad < 40)
@@ -98,28 +98,12 @@ void Calibrate (uint8_t* r2r_val, int16_t * init_val_single_ended)
                 }
             }
         }
-        //else //if pad >= 40
-        //{
-        //    for (int i = 0; i < 64; i++)
-        //    {
-        //        R2R_Write(i);
-        //        _delay_us(100);
-        //        val = -ADC_Read(DIFF_1_X10, ADC4);
-
-        //        if (val > 40)
-        //        {
-        //            r2r_val[pad] = i;
-        //            init_val[pad] = val + 80;
-        //            break;
-        //        }
-        //    }
-        //}
     }
     for (int pad = 40; pad <= LAST_PAD; pad++)
     {
         MUX_Select(pad);
         _delay_us(500);
-        init_val_single_ended[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 20; 
+        init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - 20; 
     }
 
 }
@@ -183,11 +167,17 @@ ISR(TIMER1_COMPA_vect)
 int main(void)
 {
 
-    int led_channels[NUM_OF_LEDS][3];
-    uint8_t r2r_val[LAST_PAD+1];
-    int16_t init_val_se[LAST_PAD+1];
-    bool velocity_sent[LAST_PAD+1];
+    uint8_t sticky_count[LAST_PAD+1];
+    memset(sticky_count,        0, sizeof(uint8_t) * (LAST_PAD+1));  
 
+    memset(init_val,            0, sizeof(int16_t) * (LAST_PAD+1));
+    memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
+    memset(r2r_val,             0, sizeof(uint8_t) * (LAST_PAD+1));
+    memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
+    memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
+    memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
+    memset(being_played,        0, sizeof(bool) * (LAST_PAD+5+1));  
+            
     SetupHardware();
 
     // turn LED blue
@@ -197,17 +187,9 @@ int main(void)
     MUX_Select(5);
     ButtonsAndDials_Read(5, NULL);
         
-    //set the buttons and dials to _not_ being played
-    for (int i = 0; i < 5; i++)
-    {
-        being_played[LAST_PAD+1+i] = false;
-    }
-
     sei(); //enable interrupts
 
-    Calibrate(r2r_val, init_val_se);
-
-    uint8_t sticky_count[LAST_PAD+1];
+    Calibrate();
 
     while (1) 
     {
@@ -224,7 +206,7 @@ int main(void)
 
                 cli();
                 GenericHID_Clear();
-                Calibrate(r2r_val, init_val_se);
+                Calibrate();
                 memset(being_played, 0, sizeof(bool) * (48 + 5));
                 memset(velocity_sent, 0, sizeof(bool) * 48);
                 sei();
@@ -409,7 +391,6 @@ int main(void)
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
         if (led_sum <= 511)
         {
-
             if (led_sum > 0)
                 led_sum = (led_sum << 1) | 1;
             else
