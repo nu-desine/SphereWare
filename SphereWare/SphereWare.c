@@ -257,6 +257,7 @@ int main(void)
             for (int i = 0; i < 5; i++)
             {
                 MUX_Select(i);
+                _delay_us(1);
                 ButtonsAndDials_Read(i, &being_played[LAST_PAD+1]);
             }
             sei(); //enable interrupts
