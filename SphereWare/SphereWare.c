@@ -48,13 +48,12 @@ uint8_t r2r_val[LAST_PAD+1];
 bool anti_sticky_applied[LAST_PAD+1];
 bool hysteris_applied[LAST_PAD+1];
 bool velocity_sent[LAST_PAD+1];
-bool being_played[LAST_PAD+1+5]; //+5 to include elite controls
+bool being_played[LAST_PAD+1+6]; //+6 to include elite controls and reset
 bool thresholds_raised = false;
 
 //this is the calibration procedure
 void Calibrate (void)
 {
-    cli(); //disable interrupt
     int16_t val;
     for (int pad = FIRST_PAD; pad <= 40; pad++)
     {
@@ -90,12 +89,11 @@ void Calibrate (void)
         init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - THRESHOLD_OVER_39; 
     }
     GenericHID_Clear();
-    memset(being_played,        0, sizeof(bool) * (48 + 5));
+    memset(being_played,        0, sizeof(bool) * (48 + 6));
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
     memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
-    sei(); //enable interrupt
 
 }
 
@@ -107,7 +105,7 @@ ISR(TIMER1_COMPA_vect)
     static int count = 0;
     bool any_played = false;
 
-    for (int pad = FIRST_PAD; pad <= (LAST_PAD + 5); pad++)
+    for (int pad = FIRST_PAD; pad <= (LAST_PAD + 6); pad++)
     {
         any_played |= being_played[pad];
     }
@@ -126,7 +124,7 @@ ISR(TIMER1_COMPA_vect)
                 }
                 thresholds_raised = true;
             }
-            LED_Set_Current(0,0,0);
+            //LED_Set_Current(0,0,0);
 
         }
 
@@ -141,7 +139,7 @@ ISR(TIMER1_COMPA_vect)
             }
             thresholds_raised = false;
         }
-        LED_Set_Current(127,127,127);
+        //LED_Set_Current(127,127,127);
         count = 0;
     }
 
@@ -206,9 +204,9 @@ int main(void)
     MUX_Select(5);
     ButtonsAndDials_Read(5, NULL);
         
-    sei(); //enable interrupts
-
     Calibrate();
+
+    sei(); //enable interrupts
 
     while (1) 
     {
@@ -219,12 +217,18 @@ int main(void)
 
             if (!bit_is_set(PINE, PE2))
             {
-                // turn LED blue
+                being_played[LAST_PAD+5] = true;
                 LED_Set_Colour(0,0,1023);
-
+                cli(); //disable interrupts
+                // turn LED blue
+                thresholds_raised = false;
                 Calibrate();
+                sei(); //enable interrupts
                 while(!bit_is_set(PINE, PE2)); //wait
             }
+            else
+                being_played[LAST_PAD+5] = false;
+
             R2R_Write(r2r_val[pad]);
 
             cli(); //disable interrupts
