@@ -29,9 +29,9 @@
 #define LAST_PAD 47 
 
 #define THRESHOLD_UNDER_8 100
-#define THRESHOLD 70
+#define THRESHOLD 75
 #define SETTLING_TIME 100
-#define HYSTERISIS_ADJUST 0
+#define HYSTERISIS_ADJUST 25
 #define STICKY_TIMEOUT 100
 #define ANTI_STICKY_ADJUST 50
 
@@ -39,7 +39,7 @@
 #define SETTLING_TIME_OVER_39 200
 #define HYSTERISIS_ADJUST_OVER_39 10
 #define ANTI_STICKY_ADJUST_OVER_39 60
-#define STICKY_TIMEOUT_OVER_39 400
+#define STICKY_TIMEOUT_OVER_39 500
 
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
@@ -269,7 +269,7 @@ int main(void)
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         led_sum += filtered_val[pad];
-                        init_val[pad] -= 50;
+                        init_val[pad] -= HYSTERISIS_ADJUST;
                     }
                     else if (velocity_sent[pad])
                     {
@@ -315,7 +315,7 @@ int main(void)
                     sei(); //enable interrrupts
 
                     velocity_sent[pad] = false;
-                    init_val[pad] += 50;
+                    init_val[pad] += HYSTERISIS_ADJUST;
                 }
             }
             else // if pad >= 40
