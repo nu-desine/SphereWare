@@ -1,33 +1,3 @@
-/*
-   LUFA Library
-   Copyright (C) Dean Camera, 2012.
-
-   dean [at] fourwalledcubicle [dot] com
-   www.lufa-lib.org
-   */
-
-/*
-   Copyright 2012  Dean Camera (dean [at] fourwalledcubicle [dot] com)
-
-   Permission to use, copy, modify, distribute, and sell this
-   software and its documentation for any purpose is hereby granted
-   without fee, provided that the above copyright notice appear in
-   all copies and that both that the copyright notice and this
-   permission notice and warranty disclaimer appear in supporting
-   documentation, and that the name of the author not be used in
-   advertising or publicity pertaining to distribution of the
-   software without specific, written prior permission.
-
-   The author disclaim all warranties with regard to this
-   software, including all implied warranties of merchantability
-   and fitness.  In no event shall the author be liable for any
-   special, indirect or consequential damages or any damages
-   whatsoever resulting from loss of use, data or profits, whether
-   in an action of contract, negligence or other tortious action,
-   arising out of or in connection with the use or performance of
-   this software.
-   */
-
 /* Copyright (c) nu desine 2012 
 
    This file is part of SphereWare.
@@ -47,9 +17,9 @@
 
 */
 
-/** \file
+/** \
  *
- *  Main source file for the GenericHID demo. This file contains the main tasks of the demo and
+ *  Main source file for the SphereWare. This file contains the main tasks and
  *  is responsible for the initial application hardware configuration.
  */
 
@@ -183,9 +153,12 @@ ISR(TIMER1_COMPA_vect)
 
 void Delay(uint8_t pad)
 {
+    cli(); //disable interrupts
+    bool tr = thresholds_raised;
+    sei(); //enable interrupts
     if (pad < 40)
     {
-        if (thresholds_raised)
+        if (tr)
         {
             if (!(pad % 8))
                 _delay_ms(1);
@@ -200,7 +173,7 @@ void Delay(uint8_t pad)
     } 
     else 
     {
-        if (thresholds_raised)
+        if (tr)
         {
             if (!(pad % 8))
                 _delay_ms(2);
@@ -560,9 +533,3 @@ void CreateGenericHIDReport(uint8_t* DataArray)
        an array to hold the report to the host.
        */
 }
-
-void HID_Task(void)
-{
-
-}
-
