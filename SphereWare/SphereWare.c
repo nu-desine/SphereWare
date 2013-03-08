@@ -67,8 +67,8 @@
 
 #define THRESHOLD_OVER_39 10
 #define SETTLING_TIME_OVER_39 200
-#define HYSTERISIS_ADJUST_OVER_39 5 
-#define ANTI_STICKY_ADJUST_OVER_39 50
+#define HYSTERISIS_ADJUST_OVER_39 10
+#define ANTI_STICKY_ADJUST_OVER_39 60
 #define STICKY_TIMEOUT_OVER_39 400
 
 int16_t filtered_val[LAST_PAD+1];
@@ -84,6 +84,7 @@ bool thresholds_raised = false;
 //this is the calibration procedure
 void Calibrate (void)
 {
+    cli(); //disable interrupt
     int16_t val;
     for (int pad = FIRST_PAD; pad <= 40; pad++)
     {
@@ -102,7 +103,6 @@ void Calibrate (void)
                 if (val > -400)
                 {
                     r2r_val[pad] = i;
-                    cli(); //disable interrupt
                     if (pad < 8)
                         init_val[pad] = val + THRESHOLD_UNDER_8;
                     else
@@ -119,14 +119,13 @@ void Calibrate (void)
         Delay(pad);
         init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - THRESHOLD_OVER_39; 
     }
-    cli(); //disable interrupt
     GenericHID_Clear();
     memset(being_played,        0, sizeof(bool) * (48 + 5));
-    sei(); //enable interrupt
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
     memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
+    sei(); //enable interrupt
 
 }
 
@@ -275,7 +274,7 @@ int main(void)
                 {
                     if (!velocity_sent[pad])
                     {
-                        int8_t velocity;
+                        int16_t velocity;
                         int16_t peak = val;
                         for (int i = 0; i < 200; i++)
                         {
