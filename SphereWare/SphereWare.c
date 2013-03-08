@@ -65,11 +65,11 @@
 #define STICKY_TIMEOUT 100
 #define ANTI_STICKY_ADJUST 50
 
-#define THRESHOLD_OVER_39 20
+#define THRESHOLD_OVER_39 10
 #define SETTLING_TIME_OVER_39 200
-#define HYSTERISIS_ADJUST_OVER_39 5
+#define HYSTERISIS_ADJUST_OVER_39 5 
 #define ANTI_STICKY_ADJUST_OVER_39 50
-#define STICKY_TIMEOUT_OVER_39 100
+#define STICKY_TIMEOUT_OVER_39 400
 
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
@@ -102,10 +102,12 @@ void Calibrate (void)
                 if (val > -400)
                 {
                     r2r_val[pad] = i;
+                    cli(); //disable interrupt
                     if (pad < 8)
                         init_val[pad] = val + THRESHOLD_UNDER_8;
                     else
                         init_val[pad] = val + THRESHOLD;
+                    sei(); //enable interrupt
                     break;
                 }
             }
@@ -123,7 +125,7 @@ void Calibrate (void)
     sei(); //enable interrupt
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
     memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
-    memset(velocity_sent,       0, sizeof(bool) * 48);
+    memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
 
 }
@@ -353,7 +355,7 @@ int main(void)
                 {
                     if (!hysteris_applied[pad])
                     {
-                        init_val_se[pad] -= HYSTERISIS_ADJUST_OVER_39;
+                        init_val_se[pad] += HYSTERISIS_ADJUST_OVER_39;
                         hysteris_applied[pad] = true;
                     }
                     cli(); //disable interrupts
@@ -380,7 +382,7 @@ int main(void)
                 {
                     if (hysteris_applied[pad])
                     {
-                        init_val_se[pad] += HYSTERISIS_ADJUST_OVER_39;
+                        init_val_se[pad] -= HYSTERISIS_ADJUST_OVER_39;
                         hysteris_applied[pad] = false;
                     }
 
