@@ -29,14 +29,14 @@
 #define LAST_PAD 47 
 
 #define THRESHOLD_UNDER_8 100
-#define THRESHOLD 40
-#define SETTLING_TIME 120
-#define HYSTERISIS_ADJUST 25
+#define THRESHOLD 50
+#define SETTLING_TIME 200
+#define HYSTERISIS_ADJUST 15
 #define STICKY_TIMEOUT 100
 #define ANTI_STICKY_ADJUST 50
 
 #define THRESHOLD_OVER_39 10
-#define SETTLING_TIME_OVER_39 200
+#define SETTLING_TIME_OVER_39 300
 #define HYSTERISIS_ADJUST_OVER_39 10
 #define ANTI_STICKY_ADJUST_OVER_39 60
 #define STICKY_TIMEOUT_OVER_39 500
@@ -139,7 +139,7 @@ ISR(TIMER1_COMPA_vect)
 
     if (!any_played)
     {
-        count++;
+        //count++;
         if (count > 20000)
         {
             count = 0;
@@ -257,7 +257,6 @@ int main(void)
             for (int i = 0; i < 5; i++)
             {
                 MUX_Select(i | (pad & 0b111111000));
-                _delay_us(20);
                 ButtonsAndDials_Read(i, &being_played[LAST_PAD+1]);
             }
             sei(); //enable interrupts
