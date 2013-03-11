@@ -29,8 +29,8 @@
 #define LAST_PAD 47 
 
 #define THRESHOLD_UNDER_8 100
-#define THRESHOLD 75
-#define SETTLING_TIME 100
+#define THRESHOLD 40
+#define SETTLING_TIME 120
 #define HYSTERISIS_ADJUST 25
 #define STICKY_TIMEOUT 100
 #define ANTI_STICKY_ADJUST 50
@@ -185,14 +185,10 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            if (!(pad % 8))
-                _delay_ms(1);
             _delay_ms(1);
         }
         else
         {
-            if (!(pad % 8))
-                _delay_us(SETTLING_TIME);
             _delay_us(SETTLING_TIME);
         }
     } 
@@ -200,14 +196,10 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            if (!(pad % 8))
-                _delay_ms(2);
             _delay_ms(2);
         }
         else
         {
-            if (!(pad % 8))
-                _delay_us(SETTLING_TIME_OVER_39);
             _delay_us(SETTLING_TIME_OVER_39);
         }
     }
@@ -264,8 +256,8 @@ int main(void)
             cli(); //disable interrupts
             for (int i = 0; i < 5; i++)
             {
-                MUX_Select(i);
-                _delay_us(10);
+                MUX_Select(i | (pad & 0b111111000));
+                _delay_us(20);
                 ButtonsAndDials_Read(i, &being_played[LAST_PAD+1]);
             }
             sei(); //enable interrupts
@@ -455,7 +447,6 @@ void SetupHardware(void)
     ButtonsAndDials_Init();
 
     //PE2, reset button (SW1) as input pulled high
-    DDRE |= (1 << PE2);
     PORTE |= (1 << PE2);
 
     // enable interrupt for USB and HID tasks
