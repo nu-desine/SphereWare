@@ -79,17 +79,8 @@ int main(void)
     {
         while (RunBootloader)
         {
-
             // turn LED red
-            int led_channels[NUM_OF_LEDS][3];
-
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 1023;
-                led_channels[i][1] = 0;
-                led_channels[i][2] = 0;
-            }
-            LED_WriteArray(led_channels);
+            LED_Set_Colour(1023, 0, 0);
 
             //wait for 500ms
             for (int i = 0; i < 500; ++i)
@@ -99,13 +90,7 @@ int main(void)
             }
 
             // turn LED off
-            for (int i = 0; i < NUM_OF_LEDS; ++i)
-            {
-                led_channels[i][0] = 0;
-                led_channels[i][1] = 0;
-                led_channels[i][2] = 0;
-            }
-            LED_WriteArray(led_channels);
+            LED_Set_Colour(0, 0, 0);
 
             //wait for 500ms
             for (int i = 0; i < 500; ++i)
@@ -146,14 +131,7 @@ static void SetupHardware(void)
     LED_Init();
 
     // turn LED red
-    int led_channels[NUM_OF_LEDS][3];
-    for (int i = 0; i < NUM_OF_LEDS; ++i)
-    {
-        led_channels[i][0] = 1023;
-        led_channels[i][1] = 0;
-        led_channels[i][2] = 0;
-    }
-    LED_WriteArray(led_channels);
+    LED_Set_Colour(1023, 0, 0);
 
     //PE2 button as input pulled high
     DDRE |= (1 << PE2);
