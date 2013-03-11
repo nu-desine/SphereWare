@@ -46,16 +46,39 @@ int16_t init_val[LAST_PAD+1];
 int16_t init_val_se[LAST_PAD+1]; //single ended
 uint8_t r2r_val[LAST_PAD+1];
 bool anti_sticky_applied[LAST_PAD+1];
-bool hysteris_applied[LAST_PAD+1];
+bool hysterisis_applied[LAST_PAD+1];
 bool velocity_sent[LAST_PAD+1];
 bool being_played[LAST_PAD+1+6]; //+6 to include elite controls and reset
 bool thresholds_raised = false;
 
-//this is the calibration procedure
+uint8_t pad_order[LAST_PAD+1]; 
+
+static void BubbleSort(uint8_t array_size)
+{
+  uint8_t i, j, temp;
+
+  for (i = (array_size - 1); i > 0; i--)
+  {
+    for (j = 1; j <= i; j++)
+    {
+      if (r2r_val[j-1] > r2r_val[j])
+      {
+        temp = r2r_val[j-1];
+        r2r_val[j-1] = r2r_val[j];
+        r2r_val[j] = temp;
+
+        temp = pad_order[j-1];
+        pad_order[j-1] = pad_order[j];
+        pad_order[j] = temp;
+      }
+    }
+  }
+}
+
 void Calibrate (void)
 {
     int16_t val;
-    for (int pad = FIRST_PAD; pad <= 40; pad++)
+    for (int pad = FIRST_PAD; pad < 40; pad++)
     {
         r2r_val[pad] = 0;
         MUX_Select(pad);
@@ -81,17 +104,21 @@ void Calibrate (void)
                 }
             }
         }
+        pad_order[pad] = pad;
     }
     for (int pad = 40; pad <= LAST_PAD; pad++)
     {
         MUX_Select(pad);
         Delay(pad);
         init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4) - THRESHOLD_OVER_39; 
+        pad_order[pad] = pad;
     }
+
+    BubbleSort(40);
     GenericHID_Clear();
-    memset(being_played,        0, sizeof(bool) * (48 + 6));
+    memset(being_played,        0, sizeof(bool) * (LAST_PAD+1+6));
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
-    memset(hysteris_applied,    0, sizeof(bool) * (LAST_PAD+1));
+    memset(hysterisis_applied,    0, sizeof(bool) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
 
@@ -212,24 +239,27 @@ int main(void)
     {
         uint16_t led_sum = 0;
 
-        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
+        for (uint8_t i = FIRST_PAD; i <= LAST_PAD; i++) 
+
         {
+
+            uint8_t pad = pad_order[i];
 
             if (!bit_is_set(PINE, PE2))
             {
-                being_played[LAST_PAD+5] = true;
+                being_played[LAST_PAD+6] = true;
+                // turn LED blue
                 LED_Set_Colour(0,0,1023);
                 cli(); //disable interrupts
-                // turn LED blue
                 thresholds_raised = false;
                 Calibrate();
                 sei(); //enable interrupts
                 while(!bit_is_set(PINE, PE2)); //wait
             }
             else
-                being_played[LAST_PAD+5] = false;
+                being_played[LAST_PAD+6] = false;
 
-            R2R_Write(r2r_val[pad]);
+            R2R_Write(r2r_val[i]);
 
             cli(); //disable interrupts
             for (int i = 0; i < 5; i++)
@@ -246,6 +276,7 @@ int main(void)
             if (pad < 40) 
             { 
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
+                //GenericHID_Write_PadData(pad, r2r_val[i], i);
 
                 if (val > 0)
                 {
@@ -329,10 +360,10 @@ int main(void)
 
                 if (val > 0)
                 {
-                    if (!hysteris_applied[pad])
+                    if (!hysterisis_applied[pad])
                     {
                         init_val_se[pad] += HYSTERISIS_ADJUST_OVER_39;
-                        hysteris_applied[pad] = true;
+                        hysterisis_applied[pad] = true;
                     }
                     cli(); //disable interrupts
                     filtered_val[pad] = ((filtered_val[pad] * 0.50) + ((val * 2) * 0.50));
@@ -356,10 +387,10 @@ int main(void)
                 }
                 else
                 {
-                    if (hysteris_applied[pad])
+                    if (hysterisis_applied[pad])
                     {
                         init_val_se[pad] -= HYSTERISIS_ADJUST_OVER_39;
-                        hysteris_applied[pad] = false;
+                        hysterisis_applied[pad] = false;
                     }
 
                     cli(); //disable interrupts
