@@ -139,7 +139,7 @@ ISR(TIMER1_COMPA_vect)
 
     if (!any_played)
     {
-        //count++;
+        count++;
         if (count > 20000)
         {
             count = 0;

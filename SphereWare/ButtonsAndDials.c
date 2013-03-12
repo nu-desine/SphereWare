@@ -38,7 +38,7 @@ void ButtonsAndDials_Read(uint8_t pad, bool * being_played)
             being_played[SW2] = ((buttons >> 3) & 1);
             GenericHID_Write_ButtonData(buttons);
             if (buttons & 0b00001000)
-                _delay_us(100);
+                _delay_ms(25);
             break;
         case SW3: // button 2
             buttons &= 0b00001011;
@@ -46,7 +46,7 @@ void ButtonsAndDials_Read(uint8_t pad, bool * being_played)
             being_played[SW3] = ((buttons >> 2) & 1);
             GenericHID_Write_ButtonData(buttons);
             if (buttons & 0b00000100)
-                _delay_us(100);
+                _delay_ms(25);
             break;
         case SW4: // button 1
             buttons &= 0b00001101;
@@ -54,7 +54,7 @@ void ButtonsAndDials_Read(uint8_t pad, bool * being_played)
             being_played[SW4] = ((buttons >> 1) & 1);
             GenericHID_Write_ButtonData(buttons);
             if (buttons & 0b00000010)
-                _delay_us(100);
+                _delay_ms(25);
             break;
         case ELITE:
             buttons &= 0b00001110;
