@@ -28,9 +28,9 @@
 #define FIRST_PAD 0  
 #define LAST_PAD 47 
 
-#define THRESHOLD_UNDER_8 110
-#define THRESHOLD 80
-#define SETTLING_TIME 280
+#define THRESHOLD_UNDER_8 120
+#define THRESHOLD 105
+#define SETTLING_TIME 300
 #define HYSTERISIS_ADJUST 15
 #define STICKY_TIMEOUT 100
 #define ANTI_STICKY_ADJUST 50
@@ -118,7 +118,7 @@ void Calibrate (void)
     GenericHID_Clear();
     memset(being_played,        0, sizeof(bool) * (LAST_PAD+1+6));
     memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
-    memset(hysterisis_applied,    0, sizeof(bool) * (LAST_PAD+1));
+    memset(hysterisis_applied,  0, sizeof(bool) * (LAST_PAD+1));
     memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
     memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
 
