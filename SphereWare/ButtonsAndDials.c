@@ -28,32 +28,36 @@ void ButtonsAndDials_Read(uint8_t pad, bool * being_played)
         ELITE
     }; 
     static uint8_t buttons = 0;
+    uint8_t prev_buttons = 0;
     uint8_t elite_mux_num = pad & 0b111;
 
     switch (elite_mux_num)
     {
         case SW2: //button 3
+            prev_buttons = buttons;
             buttons &= 0b00000111;
             buttons |= !(((PIND >> PD6)) & 1) << 3;
             being_played[SW2] = ((buttons >> 3) & 1);
             GenericHID_Write_ButtonData(buttons);
-            if (buttons & 0b00001000)
+            if ((buttons & 0b00001000) && !(prev_buttons & 0b00001000))
                 _delay_ms(25);
             break;
         case SW3: // button 2
+            prev_buttons = buttons;
             buttons &= 0b00001011;
             buttons |= !(((PIND >> PD6)) & 1) << 2;
             being_played[SW3] = ((buttons >> 2) & 1);
             GenericHID_Write_ButtonData(buttons);
-            if (buttons & 0b00000100)
+            if ((buttons & 0b00000100) && !(prev_buttons & 0b00000100))
                 _delay_ms(25);
             break;
         case SW4: // button 1
+            prev_buttons = buttons;
             buttons &= 0b00001101;
             buttons |= !(((PIND >> PD6)) & 1) << 1;
             being_played[SW4] = ((buttons >> 1) & 1);
             GenericHID_Write_ButtonData(buttons);
-            if (buttons & 0b00000010)
+            if ((buttons & 0b00000010) && !(prev_buttons & 0b00000010))
                 _delay_ms(25);
             break;
         case ELITE:
