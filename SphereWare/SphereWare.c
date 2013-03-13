@@ -32,14 +32,16 @@
 #define THRESHOLD 105
 #define SETTLING_TIME 300
 #define HYSTERISIS_ADJUST 25
-#define STICKY_TIMEOUT 100
+#define STICKY_TIMEOUT 10
 #define ANTI_STICKY_ADJUST 50
 
-#define THRESHOLD_OVER_39 10
+#define HYSTERISIS_ADJUST_UNDER_16 35
+
+#define THRESHOLD_OVER_39 40
 #define SETTLING_TIME_OVER_39 300
 #define HYSTERISIS_ADJUST_OVER_39 10
-#define ANTI_STICKY_ADJUST_OVER_39 110
-#define STICKY_TIMEOUT_OVER_39 600
+#define ANTI_STICKY_ADJUST_OVER_39 0
+#define STICKY_TIMEOUT_OVER_39 0
 
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
@@ -211,8 +213,8 @@ void Delay(uint8_t pad)
 int main(void)
 {
 
-    uint8_t sticky_count[LAST_PAD+1];
-    memset(sticky_count, 0, sizeof(uint8_t) * (LAST_PAD+1));  
+    uint16_t sticky_count[LAST_PAD+1];
+    memset(sticky_count, 0, sizeof(uint16_t) * (LAST_PAD+1));
 
     SetupHardware();
 
@@ -295,7 +297,10 @@ int main(void)
                         velocity_sent[pad] = true;
                         filtered_val[pad] = velocity;
                         led_sum += filtered_val[pad];
-                        init_val[pad] -= HYSTERISIS_ADJUST;
+                        if (pad < 16)
+                            init_val[pad] -= HYSTERISIS_ADJUST_UNDER_16;
+                        else
+                            init_val[pad] -= HYSTERISIS_ADJUST;
                     }
                     else if (velocity_sent[pad])
                     {
@@ -341,7 +346,10 @@ int main(void)
                     sei(); //enable interrrupts
 
                     velocity_sent[pad] = false;
-                    init_val[pad] += HYSTERISIS_ADJUST;
+                    if (pad < 16)
+                        init_val[pad] += HYSTERISIS_ADJUST_UNDER_16;
+                    else
+                        init_val[pad] += HYSTERISIS_ADJUST;
                 }
             }
             else // if pad >= 40
@@ -362,13 +370,13 @@ int main(void)
                     if (filtered_val[pad] >= 511)
                     {
                         filtered_val[pad] = 511;
-                        if (!anti_sticky_applied[pad])
-                        {
-                            cli();
-                            init_val_se[pad] -= ANTI_STICKY_ADJUST_OVER_39;
-                            anti_sticky_applied[pad] = true;
-                            sei();
-                        }
+                        //if (!anti_sticky_applied[pad])
+                        //{
+                        //    cli();
+                        //    init_val_se[pad] -= ANTI_STICKY_ADJUST_OVER_39;
+                        //    anti_sticky_applied[pad] = true;
+                        //    sei();
+                        //}
                     }
 
                     GenericHID_Write_PadData(pad, filtered_val[pad], 127);
@@ -385,16 +393,16 @@ int main(void)
                     }
 
                     cli(); //disable interrupts
-                    if (anti_sticky_applied[pad])
-                    {
-                        sticky_count[pad]++;
-                        if (sticky_count[pad] > STICKY_TIMEOUT_OVER_39)
-                        {
-                            init_val_se[pad] += ANTI_STICKY_ADJUST_OVER_39;
-                            anti_sticky_applied[pad] = false;
-                            sticky_count[pad] = 0;
-                        }
-                    }
+                    //if (anti_sticky_applied[pad])
+                    //{
+                    //    sticky_count[pad]++;
+                    //    if (sticky_count[pad] > STICKY_TIMEOUT_OVER_39)
+                    //    {
+                    //        init_val_se[pad] += ANTI_STICKY_ADJUST_OVER_39;
+                    //        anti_sticky_applied[pad] = false;
+                    //        sticky_count[pad] = 0;
+                    //    }
+                    //}
                     GenericHID_Write_PadData(pad, 0, 0);
                     being_played[pad] = false;
                     sei(); //enable interrupts
