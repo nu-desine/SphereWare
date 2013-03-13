@@ -101,7 +101,6 @@ void Calibrate (void)
                         init_val[pad] = val + THRESHOLD_UNDER_8;
                     else
                         init_val[pad] = val + THRESHOLD;
-                    sei(); //enable interrupt
                     break;
                 }
             }
