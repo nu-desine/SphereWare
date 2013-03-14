@@ -173,7 +173,6 @@ ISR(TIMER1_COMPA_vect)
 
     //service the USB interface, send the data over HID
     GenericHID_Task();
-    LED_Send();
     USB_USBTask();
 } 
 
@@ -433,7 +432,8 @@ int main(void)
                 LED_Set_Colour(led_sum, (1023 - led_sum), 0);
             }
         }
-        sei();
+        LED_Send();
+       sei();
 
     }
 }
