@@ -18,6 +18,7 @@
     */
 #include "GenericHID.h"
 #include "MIDI.h"
+#include "LED.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 
@@ -134,39 +135,49 @@ void GenericHID_Adjust_Dial_Debug(uint8_t dial_number, int8_t amount, uint16_t s
 
 }
 
-void GenericHID_ProcessReport(uint8_t* DataArray)
+void GenericHID_ProcessReport(uint8_t* data)
 {
     /*
        This is where you need to process reports sent from the host to the device. This
-       function is called each time the host has sent a new report. DataArray is an array
+       function is called each time the host has sent a new report. data is an array
        holding the report sent from the host.
        */
 
-    if (DataArray[0] == 0x01) 
+    if (data[0] == 0x01)
     {
-        int noOfMessages = DataArray[1];
-
-        //decode each message within the HID report
-        for (int i = 0; i < noOfMessages; i++)
-        {
-            //get the first byte index of the message
-            int messageIndex  = (i * 4) + 2;
-
-            //==== MIDI Message ====
-            if (DataArray[messageIndex] == 0)
+            //data[1] holds the number of messages in this report
+            for (uint8_t i = 0; i < data[1]; i++)
             {
-                uint8_t message[4];
-                message[0] = 0x00;
-                message[1] = DataArray[messageIndex+1];
-                message[2] = DataArray[messageIndex+2];
-                message[3] = DataArray[messageIndex+3];
+                //get the first byte index of the message
+                int index  = (i * 4) + 2;
 
-                MIDI_Send_Usb_Midi (message);
-                MIDI_Send_Uart_Midi (message);
+                //==== MIDI Message ====
+                switch(data[index])
+                {
+                    case 0x00:
+                        {
+                            uint8_t message[4];
+                            message[0] = 0x00;
+                            message[1] = data[index+1];
+                            message[2] = data[index+2];
+                            message[3] = data[index+3];
+
+                            MIDI_Send_Usb_Midi (message);
+                            MIDI_Send_Uart_Midi (message);
+                        }
+                        break;
+                    case 0x01:
+                        LED_Set_UserMode(true);
+                        LED_Set_Colour(data[index+1] << 2, data[index+2] << 2, data[index+3] << 2);
+                        break;
+                    case 0x02:
+                        LED_Set_UserMode(false);
+                        break;
+
+                }
+
+
             }
-
-        }
-
     }
 
 }

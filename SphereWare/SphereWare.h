@@ -33,8 +33,8 @@
  *  Header file for GenericHID.c.
  */
 
-#ifndef _GENERICHID_H_
-#define _GENERICHID_H_
+#ifndef _SPHEREWARE_H_
+#define _SPHEREWARE_H_
 
     /* Includes: */
         #include <avr/io.h>
@@ -72,6 +72,5 @@
 
         void ProcessGenericHIDReport(uint8_t* DataArray);
         void CreateGenericHIDReport(uint8_t* DataArray);
-
 #endif
 
