@@ -42,7 +42,7 @@ void ADC_Init(void)
   */
 void ADC_SetRef(Ref_Mode mode)
 {
-    ADMUX &= ~(0 << REFS1) & ~(0 << REFS0);
+    ADMUX &= ~(1 << REFS1) & ~(1 << REFS0);
     switch(mode)
     {
         case REF_2V56:
