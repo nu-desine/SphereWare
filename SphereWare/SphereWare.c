@@ -24,6 +24,7 @@
  */
 
 #include "SphereWare.h"
+#include <avr/eeprom.h> 
 
 #define FIRST_PAD 0  
 #define LAST_PAD 47 
@@ -81,13 +82,18 @@ int main(void)
 
     sei(); //enable interrupts
 
+    bool test_passed = true;
+    bool ee_test_passed = (eeprom_read_byte ((const uint8_t *)1)) == 0xA;
+
+    if (ee_test_passed)
+        goto set_led;
+
     int32_t val_array[LAST_PAD+1];
     int32_t diff_array[LAST_PAD+1];
     int16_t prev_val[LAST_PAD+1];
     memset(val_array, 0, sizeof(int32_t) * (LAST_PAD+1));
     memset(diff_array, 0, sizeof(int32_t) * (LAST_PAD+1));
     memset(prev_val, 0, sizeof(int16_t) * (LAST_PAD+1));
-    bool test_passed = true;
     int32_t failed = 1023;
 
     int16_t thresholds[8][2] = {{620, 650}
@@ -165,7 +171,30 @@ int main(void)
         }
     }
 
+    R2R_Write(0);
+
+    bool r2r_ok = true;
+    int16_t prev_r2r_val = 0;
+    for(int i = 0; i < 32; ++i)
+    {
+        R2R_Write(i);
+        _delay_ms(1);
+        int16_t val = ADC_Read(0,1);
+
+        r2r_ok &= (val >= prev_r2r_val) && (val > 450) && (val < 550);
+
+        prev_r2r_val = val;
+    }
+
+    if (!r2r_ok)
+        test_passed = false;
+
+
 end:
+    if (test_passed)
+        eeprom_write_byte((const uint8_t *)1, 0xA);
+
+set_led:
         if (test_passed)
             LED_Set_Colour(0,1023,0);
         else
@@ -177,8 +206,7 @@ end:
             for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
             {
                 cli();
-                GenericHID_Write_DebugData(pad, val_array[pad]);
-                GenericHID_Write_DebugData(0, failed);
+                GenericHID_Write_DebugData(0, ee_test_passed);
                 sei();
             }
         }

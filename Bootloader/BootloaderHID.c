@@ -75,7 +75,9 @@ int main(void)
     /* Enable global interrupts so that the USB stack can function */
     sei();
 
-    if (!bit_is_set(PINE, PE2))
+    bool ee_test_passed = (eeprom_read_byte ((const uint8_t *)1)) == 0xA;
+
+    if (bit_is_clear(PINE, PE2) && ee_test_passed)
     {
         while (RunBootloader)
         {
