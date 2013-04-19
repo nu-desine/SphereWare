@@ -206,7 +206,8 @@ set_led:
             for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
             {
                 cli();
-                GenericHID_Write_DebugData(0, ee_test_passed);
+                GenericHID_Write_DebugData(pad, val_array[pad]);
+                GenericHID_Write_DebugData(0, failed);
                 sei();
             }
         }
