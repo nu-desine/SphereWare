@@ -143,8 +143,6 @@ try:
                     
             sys.stdout.write("\r\n")
 
-
-
         #    print report[1:3]
         #    data = []
         #    for byte in report[1:2]:

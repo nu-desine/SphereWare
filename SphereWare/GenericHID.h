@@ -14,5 +14,6 @@ void GenericHID_ProcessReport(uint8_t* DataArray);
 void GenericHID_Adjust_Dial(uint8_t dial_number, int8_t amount);
 void GenericHID_Adjust_Dial_Debug(uint8_t dial_number, int8_t amount, uint16_t state);
 void GenericHID_Clear(void);
+bool GenericHID_Get_PingAck(void);
 
 #endif// __GENERICHID_H__ 

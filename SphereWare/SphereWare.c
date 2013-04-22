@@ -59,7 +59,6 @@ uint8_t pad_order[LAST_PAD+1];
 //interrupt callback
 ISR(TIMER1_COMPA_vect)
 {
-
     //service the USB interface, send the data over HID
     GenericHID_Task();
     USB_USBTask();
@@ -101,7 +100,7 @@ int main(void)
                                ,{580, 610}
                                ,{540, 580}
                                ,{490, 520}
-                               ,{470, 500}
+                               ,{450, 490}
                                ,{390, 410}
                                ,{240, 350}};
 
@@ -115,7 +114,7 @@ int main(void)
         {
 
             MUX_Select(pad);
-            _delay_ms(1);
+            _delay_us(400);
             int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
             val_array[pad] += val; 
             if (i > 0)
@@ -158,13 +157,13 @@ int main(void)
             if ((diff_array[pad] > 0) && (diff_array[pad] > 20))
             {
                 test_passed = false;
-                failed = pad;
+                failed = pad + 100;
                 goto end;
             }
             else if ((diff_array[pad] < 0) && (diff_array[pad] < -20))
             {
                 test_passed = false;
-                failed = pad;
+                failed = pad + 200;
                 goto end;
             }
 
@@ -189,8 +188,18 @@ int main(void)
     if (!r2r_ok)
         test_passed = false;
 
+    if (!GenericHID_Get_PingAck())
+    {
+        test_passed = false;
+        failed = 66;
+    }
 
 end:
+    // turn LED yellow 
+    LED_Set_Colour(511,511,0);
+
+    while(bit_is_set(PINE, PE2));//wait
+
     if (test_passed)
         eeprom_write_byte((const uint8_t *)1, 0xA);
 
@@ -203,13 +212,19 @@ set_led:
 
         while (1)
         {
-            for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
-            {
-                cli();
-                GenericHID_Write_DebugData(pad, val_array[pad]);
-                GenericHID_Write_DebugData(0, failed);
-                sei();
-            }
+            cli();
+            GenericHID_Write_ButtonData(100);
+            sei();
+
+            //for (uint8_t pad = 32; pad <= 39; pad++) 
+            //{
+            //    MUX_Select(pad);
+            //    _delay_ms(10);
+            //    int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+            //    GenericHID_Write_DebugData(pad, val);
+            //    GenericHID_Write_DebugData(0, failed);
+            //    sei();
+            //}
         }
 
 

@@ -20,6 +20,12 @@
 #include "MIDI.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
+volatile bool ping_ack = false;
+
+bool GenericHID_Get_PingAck(void)
+{
+    return ping_ack;
+}
 
 void GenericHID_Task(void)
 {
@@ -167,6 +173,10 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
 
         }
 
+    }
+    else if (DataArray[0] = 0x02)
+    {
+        ping_ack = true;
     }
 
 }
