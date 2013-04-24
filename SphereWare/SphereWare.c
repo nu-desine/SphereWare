@@ -95,14 +95,14 @@ int main(void)
     memset(prev_val, 0, sizeof(int16_t) * (LAST_PAD+1));
     int32_t failed = 1023;
 
-    int16_t thresholds[8][2] = {{620, 650}
+    int16_t thresholds[8][2] = {{630, 660}
                                ,{600, 640}
                                ,{580, 610}
                                ,{540, 580}
-                               ,{490, 520}
+                               ,{490, 530}
                                ,{450, 490}
                                ,{390, 410}
-                               ,{240, 350}};
+                               ,{230, 350}};
 
     //while (1) 
 #define NUM_AVG 100 
@@ -212,19 +212,19 @@ set_led:
 
         while (1)
         {
-            cli();
-            GenericHID_Write_ButtonData(100);
-            sei();
 
-            //for (uint8_t pad = 32; pad <= 39; pad++) 
-            //{
-            //    MUX_Select(pad);
-            //    _delay_ms(10);
-            //    int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
-            //    GenericHID_Write_DebugData(pad, val);
-            //    GenericHID_Write_DebugData(0, failed);
-            //    sei();
-            //}
+            for (uint8_t pad = 40; pad <= 48; pad++) 
+            {
+                MUX_Select(pad);
+                cli();
+                GenericHID_Write_ButtonData(100);
+                sei();
+                _delay_ms(10);
+                int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+                GenericHID_Write_DebugData(pad, val);
+                GenericHID_Write_DebugData(47, failed);
+                sei();
+            }
         }
 
 

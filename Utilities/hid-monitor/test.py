@@ -6,7 +6,7 @@ while 1:
     print "Press [Enter] to run."
     raw_input();
     subprocess.call(["make", "first"])
-    time.sleep(1);
+    time.sleep(1.2);
     h = hid.device(0x1d50, 0x6021)
     h.set_nonblocking(0)
     if h:
