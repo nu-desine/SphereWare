@@ -213,7 +213,7 @@ set_led:
         while (1)
         {
 
-            for (uint8_t pad = 40; pad <= 48; pad++) 
+            for (uint8_t pad = 40; pad <= 47; pad++) 
             {
                 MUX_Select(pad);
                 cli();
