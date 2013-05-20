@@ -169,7 +169,7 @@ int main(void)
     memset(val_array, 0, sizeof(int32_t) * (LAST_PAD+1));
     memset(diff_array, 0, sizeof(int32_t) * (LAST_PAD+1));
     memset(prev_val, 0, sizeof(int16_t) * (LAST_PAD+1));
-    int32_t failed = 1023;
+    uint8_t failed = 0xFF;
 
     int16_t thresholds[8][2] = {{630, 660}
                                ,{600, 640}
@@ -233,13 +233,13 @@ int main(void)
             if ((diff_array[pad] > 0) && (diff_array[pad] > 20))
             {
                 test_passed = false;
-                failed = pad + 100;
+                failed = pad;
                 goto end;
             }
             else if ((diff_array[pad] < 0) && (diff_array[pad] < -20))
             {
                 test_passed = false;
-                failed = pad + 200;
+                failed = pad;
                 goto end;
             }
 
@@ -262,7 +262,10 @@ int main(void)
     }
 
     if (!r2r_ok)
+    {
         test_passed = false;
+        failed = 77;
+    }
 
     if (!GenericHID_Get_PingAck())
     {
@@ -286,6 +289,7 @@ set_led:
             LED_Set_Colour(1023,0,0);
 
 
+        GenericHID_Clear();
     //while (1)
     {
         cli();
@@ -296,7 +300,8 @@ set_led:
             GenericHID_Write_Raw(pad + 24, init_val[pad]); 
             GenericHID_Write_Raw(pad + 72, init_val_se[pad]); 
         }
-        GenericHID_Write_Raw(120, failed); 
+        GenericHID_Write_Raw(121, 0xAA); 
+        GenericHID_Write_Raw(122, failed); 
         sei();
     }
     while (1);//wait
