@@ -18,8 +18,10 @@
     */
 #include "GenericHID.h"
 #include "MIDI.h"
+#include <avr/wdt.h>
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
+volatile uint8_t data_acknowledged = 0;
 volatile bool ping_ack = false;
 
 bool GenericHID_Get_PingAck(void)
@@ -29,7 +31,7 @@ bool GenericHID_Get_PingAck(void)
 
 void GenericHID_Task(void)
 {
-    static bool flip = 0;
+    static uint8_t flip = 0;
 
     /* Device must be connected and configured for the task to run */
     if (USB_DeviceState != DEVICE_STATE_Configured)
@@ -54,7 +56,10 @@ void GenericHID_Task(void)
             hid_in_buffer[99] = 0; 
         }
 
-        flip = !flip;
+        flip++;
+
+        if (flip > 3)
+            flip = 0;
 
         /* Write Report Data */
         Endpoint_Write_Stream_LE(&data, sizeof(data), NULL);
@@ -85,6 +90,23 @@ void GenericHID_Task(void)
         Endpoint_ClearOUT();
     }
 }
+
+void GenericHID_Write_Raw(uint8_t pad_number, int16_t data)
+{
+    hid_in_buffer[1 + (pad_number * 2)] = data;
+    hid_in_buffer[2 + (pad_number * 2)] = data >> 8;
+};
+
+void GenericHID_Write_Raw8(uint8_t pad_number, uint8_t data)
+{
+    hid_in_buffer[1 + pad_number] = data;
+};
+
+void GenericHID_Set_ReportType(uint8_t type)
+{
+    hid_in_buffer[0] = type;
+}
+
 
 void GenericHID_Write_PadData (uint8_t pad_number, int16_t pad_value, uint8_t pad_velocity)
 {
@@ -140,6 +162,12 @@ void GenericHID_Adjust_Dial_Debug(uint8_t dial_number, int8_t amount, uint16_t s
 
 }
 
+uint8_t GenericHID_Check_Ack(void)
+{
+    return data_acknowledged;
+}
+
+
 void GenericHID_ProcessReport(uint8_t* DataArray)
 {
     /*
@@ -159,16 +187,23 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
             int messageIndex  = (i * 4) + 2;
 
             //==== MIDI Message ====
-            if (DataArray[messageIndex] == 0)
+            switch(DataArray[messageIndex])
             {
-                uint8_t message[4];
-                message[0] = 0x00;
-                message[1] = DataArray[messageIndex+1];
-                message[2] = DataArray[messageIndex+2];
-                message[3] = DataArray[messageIndex+3];
+                case 0:
+                    {
+                        uint8_t message[4];
+                        message[0] = 0x00;
+                        message[1] = DataArray[messageIndex+1];
+                        message[2] = DataArray[messageIndex+2];
+                        message[3] = DataArray[messageIndex+3];
 
-                MIDI_Send_Usb_Midi (message);
-                MIDI_Send_Uart_Midi (message);
+                        MIDI_Send_Usb_Midi (message);
+                        MIDI_Send_Uart_Midi (message);
+                    }
+                    break;
+                case 1:
+                    wdt_enable(WDTO_15MS);
+                    break;
             }
 
         }

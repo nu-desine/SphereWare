@@ -24,6 +24,7 @@
  */
 
 #include "SphereWare.h"
+#include <avr/wdt.h>
 #include <avr/eeprom.h> 
 
 #define FIRST_PAD 0  
@@ -47,7 +48,7 @@
 int16_t filtered_val[LAST_PAD+1];
 int16_t init_val[LAST_PAD+1];
 int16_t init_val_se[LAST_PAD+1]; //single ended
-uint8_t r2r_val[LAST_PAD+1];
+int16_t r2r_val[LAST_PAD+1];
 bool anti_sticky_applied[LAST_PAD+1];
 bool hysterisis_applied[LAST_PAD+1];
 bool velocity_sent[LAST_PAD+1];
@@ -55,6 +56,49 @@ bool being_played[LAST_PAD+1+6]; //+6 to include elite controls and reset
 bool thresholds_raised = false;
 
 uint8_t pad_order[LAST_PAD+1]; 
+
+void Calibrate (void)
+{
+    int16_t val;
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    {
+        r2r_val[pad] = 0;
+        MUX_Select(pad);
+        Delay(pad);
+        filtered_val[pad] = 0;
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                R2R_Write(i);
+                Delay(pad);
+                val = -ADC_Read(DIFF_1_X10, ADC4);
+
+                if (val > -400)
+                {
+                    r2r_val[pad] = i;
+                    init_val[pad] = val; 
+                    break;
+                }
+            }
+        }
+        pad_order[pad] = pad;
+    }
+    ADC_SetRef(REF_VCC);
+    for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
+    {
+        MUX_Select(pad);
+        Delay(pad);
+        init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4); 
+    }
+    ADC_SetRef(REF_2V56);
+
+    GenericHID_Clear();
+    memset(being_played,        0, sizeof(bool) * (LAST_PAD+1+6));
+    memset(anti_sticky_applied, 0, sizeof(bool) * (LAST_PAD+1));
+    memset(hysterisis_applied,  0, sizeof(bool) * (LAST_PAD+1));
+    memset(velocity_sent,       0, sizeof(bool) * (LAST_PAD+1));
+    memset(filtered_val,        0, sizeof(int16_t) * (LAST_PAD+1));
+}
 
 //interrupt callback
 ISR(TIMER1_COMPA_vect)
@@ -64,6 +108,35 @@ ISR(TIMER1_COMPA_vect)
     USB_USBTask();
 } 
 
+
+void Delay(uint8_t pad)
+{
+    cli(); //disable interrupts
+    bool tr = thresholds_raised;
+    sei(); //enable interrupts
+    if (pad < 40)
+    {
+        if (tr)
+        {
+            _delay_ms(1);
+        }
+        else
+        {
+            _delay_us(SETTLING_TIME);
+        }
+    } 
+    else 
+    {
+        if (tr)
+        {
+            _delay_ms(2);
+        }
+        else
+        {
+            _delay_us(SETTLING_TIME_OVER_39);
+        }
+    }
+}
 
 /** Main program entry point. This routine configures the hardware required by the application, then
  *  enters a loop to run the application tasks in sequence.
@@ -76,8 +149,11 @@ int main(void)
 
     SetupHardware();
 
-    // turn LED blue
-    LED_Set_Colour(0,0,1023);
+    //detect wether this is an elite unit
+    MUX_Select(5);
+    //ButtonsAndDials_Read(5, NULL);
+        
+    Calibrate();
 
     sei(); //enable interrupts
 
@@ -210,23 +286,20 @@ set_led:
             LED_Set_Colour(1023,0,0);
 
 
-        while (1)
+    //while (1)
+    {
+        cli();
+        GenericHID_Set_ReportType(0x02);
+        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
         {
-
-            for (uint8_t pad = 40; pad <= 47; pad++) 
-            {
-                MUX_Select(pad);
-                cli();
-                GenericHID_Write_ButtonData(100);
-                sei();
-                _delay_ms(10);
-                int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
-                GenericHID_Write_DebugData(pad, val);
-                GenericHID_Write_DebugData(47, failed);
-                sei();
-            }
+            GenericHID_Write_Raw8(pad, r2r_val[pad]); 
+            GenericHID_Write_Raw(pad + 24, init_val[pad]); 
+            GenericHID_Write_Raw(pad + 72, init_val_se[pad]); 
         }
-
+        GenericHID_Write_Raw(120, failed); 
+        sei();
+    }
+    while (1);//wait
 
 }
 
@@ -247,7 +320,7 @@ void SetupHardware(void)
     ADC_Init();
     R2R_Init();
     MIDI_Init();
-    ButtonsAndDials_Init();
+    //ButtonsAndDials_Init();
 
     //PE2, reset button (SW1) as input pulled high
     PORTE |= (1 << PE2);
