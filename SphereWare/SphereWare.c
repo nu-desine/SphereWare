@@ -76,156 +76,71 @@ int main(void)
 
     SetupHardware();
 
-    // turn LED blue
-    LED_Set_Colour(0,0,1023);
+    // turn LED off
 
+    LED_Set_Colour(0,0,0);
     sei(); //enable interrupts
 
-    bool test_passed = true;
-    bool ee_test_passed = (eeprom_read_byte ((const uint8_t *)1)) == 0xA;
+    bool passed = true;
+    bool hemisphere_no = 0;
 
-    if (ee_test_passed)
-        goto set_led;
+    uint8_t first_pad = 0;
+    uint8_t last_pad = 24;
 
-    int32_t val_array[LAST_PAD+1];
-    int32_t diff_array[LAST_PAD+1];
-    int16_t prev_val[LAST_PAD+1];
-    memset(val_array, 0, sizeof(int32_t) * (LAST_PAD+1));
-    memset(diff_array, 0, sizeof(int32_t) * (LAST_PAD+1));
-    memset(prev_val, 0, sizeof(int16_t) * (LAST_PAD+1));
-    int32_t failed = 1023;
-
-    int16_t thresholds[8][2] = {{630, 660}
-                               ,{600, 640}
-                               ,{580, 610}
-                               ,{540, 580}
-                               ,{490, 530}
-                               ,{450, 490}
-                               ,{390, 410}
-                               ,{230, 350}};
-
-    //while (1) 
-#define NUM_AVG 100 
-    for (uint8_t i = 0; i < NUM_AVG; i++)
+    while (1)
     {
-        uint16_t led_sum = 0;
+        passed = true;
 
-        for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
+        if (bit_is_clear(PINE, PE2))
         {
-
-            MUX_Select(pad);
-            _delay_us(400);
-            int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
-            val_array[pad] += val; 
-            if (i > 0)
-            { 
-                diff_array[pad] += (prev_val[pad] - val);
-            }
-            prev_val[pad] = val;
-
+            hemisphere_no = !hemisphere_no;
+            while (bit_is_clear(PINE, PE2));//wait
         }
-    }
-    for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
-    {
-        val_array[pad] /= NUM_AVG;
-    }
 
-    for (int i = 0; i < 48; i+=8)
-    {
-        for (int j = 0; j < 8; j++)
+        if (hemisphere_no == 0)
         {
-            uint8_t pad = i+j;
+            first_pad = 0;
+            last_pad = 4;
+        }
+        else
+        {
+            first_pad = 24;
+            last_pad = 47;
+        }
 
-            if (j > 0)
+
+        for (int pad = first_pad; pad <= last_pad; pad++)
+        {
+            MUX_Select(pad);
+            _delay_ms(1);
+            int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
+            if (pad < 40)
             {
-                if (val_array[pad] > val_array[pad - 1])
+                if ((val > 570) && (val < 590))
+                    GenericHID_Write_PadData(pad, 1, 1);
+                else
                 {
-                    test_passed = false;
-                    failed = pad;
-                    goto end;
+                    GenericHID_Write_DebugData(pad, val);
+                    passed = false;
+                }
+            }
+            else //if > 40
+            {
+                if ((val > 380) && (val < 580))
+                    GenericHID_Write_PadData(pad, 1, 1);
+                else
+                {
+                    GenericHID_Write_PadData(pad, 1, 0);
+                    passed = false;
                 }
             }
 
-            if ((val_array[pad] < thresholds[j][0]) || (val_array[pad] >= thresholds[j][1]))
-            {
-                test_passed = false;
-                failed = pad;
-                goto end;
-            }
-
-
-            if ((diff_array[pad] > 0) && (diff_array[pad] > 20))
-            {
-                test_passed = false;
-                failed = pad + 100;
-                goto end;
-            }
-            else if ((diff_array[pad] < 0) && (diff_array[pad] < -20))
-            {
-                test_passed = false;
-                failed = pad + 200;
-                goto end;
-            }
-
         }
-    }
-
-    R2R_Write(0);
-
-    bool r2r_ok = true;
-    int16_t prev_r2r_val = 0;
-    for(int i = 0; i < 32; ++i)
-    {
-        R2R_Write(i);
-        _delay_ms(1);
-        int16_t val = ADC_Read(0,1);
-
-        r2r_ok &= (val >= prev_r2r_val) && (val > 450) && (val < 550);
-
-        prev_r2r_val = val;
-    }
-
-    if (!r2r_ok)
-        test_passed = false;
-
-    if (!GenericHID_Get_PingAck())
-    {
-        test_passed = false;
-        failed = 66;
-    }
-
-end:
-    // turn LED yellow 
-    LED_Set_Colour(511,511,0);
-
-    while(bit_is_set(PINE, PE2));//wait
-
-    if (test_passed)
-        eeprom_write_byte((const uint8_t *)1, 0xA);
-
-set_led:
-        if (test_passed)
-            LED_Set_Colour(0,1023,0);
+        if (passed)
+            LED_Set_Colour(0,1023,0); //GREEN
         else
-            LED_Set_Colour(1023,0,0);
-
-
-        while (1)
-        {
-
-            for (uint8_t pad = 40; pad <= 47; pad++) 
-            {
-                MUX_Select(pad);
-                cli();
-                GenericHID_Write_ButtonData(100);
-                sei();
-                _delay_ms(10);
-                int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
-                GenericHID_Write_DebugData(pad, val);
-                GenericHID_Write_DebugData(47, failed);
-                sei();
-            }
-        }
+            LED_Set_Colour(1023,0,0); //RED
+    }
 
 
 }
