@@ -94,13 +94,16 @@ int main(void)
         if (bit_is_clear(PINE, PE2))
         {
             hemisphere_no = !hemisphere_no;
+            cli();
+            GenericHID_Clear();
+            sei();
             while (bit_is_clear(PINE, PE2));//wait
         }
 
         if (hemisphere_no == 0)
         {
             first_pad = 0;
-            last_pad = 4;
+            last_pad = 3;
         }
         else
         {
@@ -112,25 +115,38 @@ int main(void)
         for (int pad = first_pad; pad <= last_pad; pad++)
         {
             MUX_Select(pad);
-            _delay_ms(1);
+            _delay_ms(10);
             int16_t val = ADC_Read(SINGLE_ENDED, ADC4);
             if (pad < 40)
             {
-                if ((val > 570) && (val < 590))
+                if ((val > 570) && (val < 600))
+                {
+                    cli();
                     GenericHID_Write_PadData(pad, 1, 1);
+                    sei();
+                }
                 else
                 {
-                    GenericHID_Write_DebugData(pad, val);
+                    cli();
+                    GenericHID_Write_PadData(pad, 1, 0);
+                    //GenericHID_Write_DebugData(pad, val);
+                    sei();
                     passed = false;
                 }
             }
             else //if > 40
             {
                 if ((val > 380) && (val < 580))
+                {
+                    cli();
                     GenericHID_Write_PadData(pad, 1, 1);
+                    sei();
+                }
                 else
                 {
+                    cli();
                     GenericHID_Write_PadData(pad, 1, 0);
+                    sei();
                     passed = false;
                 }
             }
