@@ -113,13 +113,19 @@ while 1:
                      
 
     except (IndexError, IOError):
-        win.addstr(0, 0, "Nothing connected via USB...", 0)
-        win.clrtobot()
-        win.refresh()
-        #subprocess.call(["mplayer", "ALARM.WAV"])
-        #f.close()
-        #h.close();
-        time.sleep(1)
+        try:
+            win.addstr(0, 0, "Nothing connected via USB...", 0)
+            win.clrtobot()
+            win.refresh()
+            #subprocess.call(["mplayer", "ALARM.WAV"])
+            #f.close()
+            #h.close();
+            time.sleep(1)
+        except:
+            h.close();
+            curses.echo()
+            curses.endwin()
+            raise
     except:
         h.close();
         curses.echo()
