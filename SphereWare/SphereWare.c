@@ -27,7 +27,7 @@
 #include <avr/eeprom.h> 
 
 #define FIRST_PAD 0  
-#define LAST_PAD 47 
+#define LAST_PAD 23
 
 #define THRESHOLD_UNDER_8 120
 #define THRESHOLD 105
@@ -81,8 +81,7 @@ int main(void)
     LED_Set_Colour(0,0,0);
     sei(); //enable interrupts
 
-    bool passed = true;
-    bool hemisphere_no = 0;
+    bool passed;
 
     uint8_t first_pad = 0;
     uint8_t last_pad = 24;
@@ -91,28 +90,7 @@ int main(void)
     {
         passed = true;
 
-        if (bit_is_clear(PINE, PE2))
-        {
-            hemisphere_no = !hemisphere_no;
-            cli();
-            GenericHID_Clear();
-            sei();
-            while (bit_is_clear(PINE, PE2));//wait
-        }
-
-        if (hemisphere_no == 0)
-        {
-            first_pad = 0;
-            last_pad = 3;
-        }
-        else
-        {
-            first_pad = 24;
-            last_pad = 47;
-        }
-
-
-        for (int pad = first_pad; pad <= last_pad; pad++)
+        for (int pad = FIRST_PAD; pad <= LAST_PAD; pad++)
         {
             MUX_Select(pad);
             _delay_ms(10);
