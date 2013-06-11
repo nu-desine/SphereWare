@@ -408,6 +408,40 @@ int main(void)
                 }
             }
         }
+        
+        //=========check for USB MIDI input============
+        
+        /* Select the MIDI OUT stream */
+        Endpoint_SelectEndpoint(MIDI_STREAM_OUT_EPADDR);
+        
+        cli(); //disable interrupts
+        
+        /* Check if a MIDI command has been received */
+        if (Endpoint_IsOUTReceived())
+        {
+            MIDI_EventPacket_t MIDIEvent;
+            
+            /* Read the MIDI event packet from the endpoint */
+            Endpoint_Read_Stream_LE(&MIDIEvent, sizeof(MIDIEvent), NULL);
+            
+            uint8_t midiMessage[3];
+            midiMessage[0] = MIDIEvent.Data1;
+            midiMessage[1] = MIDIEvent.Data2;
+            midiMessage[2] = MIDIEvent.Data3;
+            
+            GenericHID_ProcessMidiMessage(midiMessage);
+            
+            /* If the endpoint is now empty, clear the bank */
+            if (!(Endpoint_BytesInEndpoint()))
+            {
+                /* Clear the endpoint ready for new packet */
+                Endpoint_ClearOUT();
+            }
+        }
+        
+        sei(); //enable interrupts
+        
+        
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
 
         if (led_sum > 0)
@@ -428,8 +462,6 @@ int main(void)
 
             LED_Set_Colour(led_sum, (1023 - led_sum), 0);
         }
-
-
     }
 }
 

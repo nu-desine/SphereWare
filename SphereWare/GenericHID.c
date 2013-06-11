@@ -20,6 +20,7 @@
 #include "MIDI.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
+uint8_t noOfMidiInMessages = 0;
 
 void GenericHID_Task(void)
 {
@@ -42,10 +43,20 @@ void GenericHID_Task(void)
             data[i] = hid_in_buffer[i + (flip * 64)];
         }
 
-        if (flip) //clear the dial data
+        if (flip)
         {
+            //clear the dial data
             hid_in_buffer[98] = 0; 
             hid_in_buffer[99] = 0; 
+            
+            //clear the button data too?
+            hid_in_buffer[97] = 0;
+            
+            //clear the midi data
+            for (int i = 0; i < 19; i++)
+                hid_in_buffer[100 + i] = 0;
+            
+            noOfMidiInMessages = 0;
         }
 
         flip = !flip;
@@ -169,6 +180,35 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
 
     }
 
+}
+
+void GenericHID_ProcessMidiMessage (uint8_t* DataArray)
+{
+    //DataArray[0] is the MIDI_EventPacket_t::CableNumber and
+    //MIDI_EventPacket_t::Command value, but we don't need that here.
+    
+//    //Here, we add the number of queued MIDI messages to send
+//    //in hid_in_buffer[100], with the message data added to
+//    //indexes 101-115, depending on where the next 'free space'
+//    //is.
+//    
+//    if (noOfMidiInMessages <= 6)
+//    {
+//        int newMessageIndex = (noOfMidiInMessages * 3) + 101;
+//        
+//        hid_in_buffer[newMessageIndex] = DataArray[1];
+//        hid_in_buffer[newMessageIndex + 1] = DataArray[2];
+//        hid_in_buffer[newMessageIndex + 2] = DataArray[3];
+//        
+//        noOfMidiInMessages++;
+//        hid_in_buffer[100] = noOfMidiInMessages;
+//    }
+    
+    hid_in_buffer[100] = DataArray[0];
+    hid_in_buffer[101] = DataArray[1];
+    hid_in_buffer[102] = DataArray[2];
+    
+    
 }
 
 /** Function to create the next report to send back to the host at the next reporting interval.
