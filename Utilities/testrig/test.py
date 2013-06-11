@@ -1,4 +1,4 @@
-import hid
+import hidraw as hid
 import time
 import subprocess
 
@@ -18,7 +18,9 @@ while 1:
         report = h.read(256)
     report = h.read(256)
     if report[245] < 48:
-        print "FAILURE on analog input ", int(report[245]) + 1
+        pad = int(report[245])
+        print "FAILURE on analog input ", pad + 1
+        print "Value:", report[pad + 48 + (48*2) + 1] | (report[pad + 48 + (48*2) + 2] << 8)
     elif report[245] == 66:
         print "FAILURE on USB connection"
     elif report[245] == 77:

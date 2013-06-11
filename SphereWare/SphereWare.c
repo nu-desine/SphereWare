@@ -90,7 +90,6 @@ void Calibrate (void)
         Delay(pad);
         init_val_se[pad] = ADC_Read(SINGLE_ENDED, ADC4); 
     }
-    ADC_SetRef(REF_2V56);
 
     GenericHID_Clear();
     memset(being_played,        0, sizeof(bool) * (LAST_PAD+1+6));
@@ -204,6 +203,7 @@ int main(void)
     for (uint8_t pad = FIRST_PAD; pad <= LAST_PAD; pad++) 
     {
         val_array[pad] /= NUM_AVG;
+        diff_array[pad] /= NUM_AVG;
     }
 
     for (int i = 0; i < 48; i+=8)

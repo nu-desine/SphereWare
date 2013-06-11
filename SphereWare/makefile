@@ -32,6 +32,9 @@ first:
 midi:
 	avrdude -p atmega32u4 -P usb -c avrisp2 -B 1 -U flash:w:SphereWare-MIDI.hex:i
 
+testrig: all
+	srec_cat -Output ../Utilities/testrig/BootAndTest-1.01.hex -intel ../Bootloader/BootloaderHID-1.01.hex -intel SphereWare.hex -intel
+
 # Include LUFA build script makefiles
 include $(LUFA_PATH)/Build/lufa_core.mk
 include $(LUFA_PATH)/Build/lufa_sources.mk
