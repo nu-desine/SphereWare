@@ -2,9 +2,9 @@
 
 ##1.01
 
-    - Fixed dial reading for Elite spheres.
+- Fixed dial reading for Elite spheres.
 
 #Bootloader
 
 ##1.01
-    - Added EEPROM read to check if production test has passed.
+- Added EEPROM read to check if production test has passed.
