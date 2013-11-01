@@ -66,6 +66,7 @@ void GenericHID_Task(void)
 
         /* Finalize the stream transfer to send the last packet */
         Endpoint_ClearIN();
+        
     }
 
     Endpoint_SelectEndpoint(GENERIC_OUT_EPADDR);
@@ -187,11 +188,11 @@ void GenericHID_ProcessMidiMessage (uint8_t* DataArray)
     //DataArray[0] is the MIDI_EventPacket_t::CableNumber and
     //MIDI_EventPacket_t::Command value, but we don't need that here.
     
-//    //Here, we add the number of queued MIDI messages to send
-//    //in hid_in_buffer[100], with the message data added to
-//    //indexes 101-115, depending on where the next 'free space'
-//    //is.
-//    
+    //Here, we add the number of queued MIDI messages to send
+    //in hid_in_buffer[100], with the message data added to
+    //indexes 101-115, depending on where the next 'free space'
+    //is.
+    
 //    if (noOfMidiInMessages <= 6)
 //    {
 //        int newMessageIndex = (noOfMidiInMessages * 3) + 101;
