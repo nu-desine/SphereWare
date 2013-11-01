@@ -186,14 +186,12 @@ ISR(TIMER1_COMPA_vect)
         
         uint8_t midiMessage[3];
         
-        //if (midiMessage[0] >= 192 && midiMessage[0] <= 207)
-        //{
-            midiMessage[0] = MIDIEvent.Data1;
-            midiMessage[1] = MIDIEvent.Data2;
-            midiMessage[2] = MIDIEvent.Data3;
-            
+        midiMessage[0] = MIDIEvent.Data1;
+        midiMessage[1] = MIDIEvent.Data2;
+        midiMessage[2] = MIDIEvent.Data3;
+        
+        if (midiMessage[0] >= 192 && midiMessage[0] <= 207)
             GenericHID_ProcessMidiMessage(midiMessage);
-        //}
         
         /* If the endpoint is now empty, clear the bank */
         if (!(Endpoint_BytesInEndpoint()))
