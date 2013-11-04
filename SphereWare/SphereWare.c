@@ -177,6 +177,7 @@ ISR(TIMER1_COMPA_vect)
     Endpoint_SelectEndpoint(MIDI_STREAM_OUT_EPADDR);
     
     /* Check if a MIDI command has been received */
+    //while (Endpoint_IsOUTReceived())
     if (Endpoint_IsOUTReceived())
     {
         MIDI_EventPacket_t MIDIEvent;
@@ -190,8 +191,8 @@ ISR(TIMER1_COMPA_vect)
         midiMessage[1] = MIDIEvent.Data2;
         midiMessage[2] = MIDIEvent.Data3;
         
-        if (midiMessage[0] >= 192 && midiMessage[0] <= 207)
-            GenericHID_ProcessMidiMessage(midiMessage);
+        //if (midiMessage[0] >= 192 && midiMessage[0] <= 207)
+        GenericHID_ProcessMidiMessage(midiMessage);
         
         /* If the endpoint is now empty, clear the bank */
         if (!(Endpoint_BytesInEndpoint()))
