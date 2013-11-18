@@ -241,8 +241,13 @@ int main(void)
             if (!bit_is_set(PINE, PE2))
             {
                 being_played[LAST_PAD+6] = true;
-                // turn LED blue
-                LED_Set_Colour(0,0,1023);
+                
+                if (LED_Status != 0)
+                {
+                    // turn LED blue
+                    LED_Set_Colour(0,0,1023);
+                }
+                
                 cli(); //disable interrupts
                 thresholds_raised = false;
                 Calibrate();
@@ -408,25 +413,29 @@ int main(void)
                 }
             }
         }
-        //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
-
-        if (led_sum > 0)
-            led_sum = (led_sum << 1) | 1;
-        else
-            led_sum = 0;
-
-        if (led_sum <= 1023)
+        
+        if (LED_Status != 0 && LED_Pressure_Status != 0)
         {
-            LED_Set_Colour(0, led_sum, (1023 - led_sum));
-        }
-        else  
-        {
-            led_sum -= 1022;
-
-            if (led_sum > 1023)
-                led_sum = 1023;
-
-            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+            //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
+            
+            if (led_sum > 0)
+                led_sum = (led_sum << 1) | 1;
+            else
+                led_sum = 0;
+            
+            if (led_sum <= 1023)
+            {
+                LED_Set_Colour(0, led_sum, (1023 - led_sum));
+            }
+            else
+            {
+                led_sum -= 1022;
+                
+                if (led_sum > 1023)
+                    led_sum = 1023;
+                
+                LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+            }
         }
 
 

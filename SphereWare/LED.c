@@ -30,6 +30,7 @@ void LED_Init() {
     LATPORT |= ~(1 << LATPIN);
     ENAPORT |= ~(1 << ENAPIN);
 
+    LED_Status = 1;
     LED_Set_Current(127, 127, 127);
 }
 
@@ -150,6 +151,30 @@ void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue)
         led_channels[i][2] = blue;
     }
     LED_WriteArray(led_channels);
+}
+
+void LED_Set_Status(uint8_t status)
+{
+    LED_Status = status;
+    
+    if (status == 0)
+    {
+        LED_Set_Colour(0, 0, 0);
+    }
+    else
+    {
+        LED_Set_Colour(0, 0, 1023);
+    }
+}
+
+void LED_Set_Pressure_Status(uint8_t status)
+{
+    LED_Pressure_Status = status;
+    
+    if (status == 0 && LED_Status == 1)
+    {
+        LED_Set_Colour(0, 0, 1023);
+    }
 }
     
 

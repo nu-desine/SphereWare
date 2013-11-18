@@ -18,6 +18,7 @@
     */
 #include "GenericHID.h"
 #include "MIDI.h"
+#include "LED.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 
@@ -163,6 +164,22 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
 
                 MIDI_Send_Usb_Midi (message);
                 MIDI_Send_Uart_Midi (message);
+            }
+            
+            //==== General LED Settings ====
+            else if (DataArray[messageIndex] == 1)
+            {
+                // on/off status
+                if (DataArray[messageIndex + 1] == 0x01)
+                {
+                    LED_Set_Status (DataArray[messageIndex + 2]);
+                }
+                
+                // pressure interaction status
+                else if (DataArray[messageIndex + 1] == 0x02)
+                {
+                    LED_Set_Pressure_Status (DataArray[messageIndex + 2]);
+                }
             }
 
         }
