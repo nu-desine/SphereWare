@@ -212,6 +212,8 @@ void Delay(uint8_t pad)
 int main(void)
 {
 
+    uint16_t prev_led_sum = 0;
+    
     uint16_t sticky_count[LAST_PAD+1];
     memset(sticky_count, 0, sizeof(uint16_t) * (LAST_PAD+1));
 
@@ -242,11 +244,13 @@ int main(void)
             {
                 being_played[LAST_PAD+6] = true;
                 
-                if (LED_Status != 0)
-                {
-                    // turn LED blue
-                    LED_Set_Colour(0,0,1023);
-                }
+//                if (LED_Status != 0)
+//                {
+//                    // set min colour
+//                    LED_Set_Colour(LED_Colour_Values[0][0],
+//                                   LED_Colour_Values[0][1],
+//                                   LED_Colour_Values[0][2]);
+//                }
                 
                 cli(); //disable interrupts
                 thresholds_raised = false;
@@ -416,16 +420,49 @@ int main(void)
         
         if (LED_Status != 0 && LED_Pressure_Status != 0)
         {
-            //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
+            /*
+             Fade the led between min colour and mid colour for 0-511 pressure range,
+             and mid colour to max colour for 511-1023 pressure range.
+            
+             To do this you need to do the following for each of the two pressure ranges:
+             1. Work out the difference between each colour value (e.g. min red - mid red)
+             2. Get the percentage of the difference value against 511.
+             3. Mutiple the current pressure value by this percentage.
+             4. Add this value to the base led colour value.
+             
+             */
+            
             
             if (led_sum > 0)
+            {
                 led_sum = (led_sum << 1) | 1;
+            }
             else
+            {
                 led_sum = 0;
+            }
             
             if (led_sum <= 1023)
             {
-                LED_Set_Colour(0, led_sum, (1023 - led_sum));
+                if (prev_led_sum > 0)
+                {
+                    int16_t red_dif = LED_Colour_Values[0][0] - LED_Colour_Values[1][0];
+                    int16_t green_dif = LED_Colour_Values[0][1] - LED_Colour_Values[1][1];
+                    int16_t blue_dif = LED_Colour_Values[0][2] - LED_Colour_Values[1][2];
+                    
+                    uint16_t red_new = LED_Colour_Values[0][0] - (led_sum * (red_dif / 1023.0));
+                    uint16_t green_new = LED_Colour_Values[0][1] - (led_sum * (green_dif / 1023.0));
+                    uint16_t blue_new = LED_Colour_Values[0][2] - (led_sum * (blue_dif / 1023.0));
+                    
+                    LED_Set_Colour(red_new, green_new, blue_new);
+                }
+                else
+                {
+                    LED_Set_Colour(LED_Colour_Values[0][0],
+                                   LED_Colour_Values[0][1],
+                                   LED_Colour_Values[0][2]);
+                }
+                
             }
             else
             {
@@ -434,9 +471,22 @@ int main(void)
                 if (led_sum > 1023)
                     led_sum = 1023;
                 
-                LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+                if (prev_led_sum > 0)
+                {
+                    int16_t red_dif = LED_Colour_Values[1][0] - LED_Colour_Values[2][0];
+                    int16_t green_dif = LED_Colour_Values[1][1] - LED_Colour_Values[2][1];
+                    int16_t blue_dif = LED_Colour_Values[1][2] - LED_Colour_Values[2][2];
+                    
+                    uint16_t red_new = LED_Colour_Values[1][0] - (led_sum * (red_dif / 1023.0));
+                    uint16_t green_new = LED_Colour_Values[1][1] - (led_sum * (green_dif / 1023.0));
+                    uint16_t blue_new = LED_Colour_Values[1][2] - (led_sum * (blue_dif / 1023.0));
+                    
+                    LED_Set_Colour(red_new, green_new, blue_new);
+                }
             }
         }
+        
+        prev_led_sum = led_sum;
 
 
     }

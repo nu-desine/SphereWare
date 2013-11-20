@@ -30,8 +30,13 @@ void LED_Init() {
     LATPORT |= ~(1 << LATPIN);
     ENAPORT |= ~(1 << ENAPIN);
 
-    LED_Status = 1;
-    LED_Set_Current(127, 127, 127);
+    LED_Status = LED_Pressure_Status = 1;
+    LED_Set_Current(127, 127, 127); // << what does this do? is it still needed?
+    
+    //set default colours
+    LED_Set_Colour_Values (0, 0, 0, 255);
+    LED_Set_Colour_Values (1, 0, 255, 0);
+    LED_Set_Colour_Values (2, 255, 0, 0);
 }
 
 static void LED_SendPacket() {
@@ -163,7 +168,9 @@ void LED_Set_Status(uint8_t status)
     }
     else
     {
-        LED_Set_Colour(0, 0, 1023);
+        LED_Set_Colour(LED_Colour_Values[0][0],
+                       LED_Colour_Values[0][1],
+                       LED_Colour_Values[0][2]);
     }
 }
 
@@ -173,10 +180,68 @@ void LED_Set_Pressure_Status(uint8_t status)
     
     if (status == 0 && LED_Status == 1)
     {
-        LED_Set_Colour(0, 0, 1023);
+        LED_Set_Colour(LED_Colour_Values[0][0],
+                       LED_Colour_Values[0][1],
+                       LED_Colour_Values[0][2]);
     }
 }
+
+void LED_Set_Colour_Values (uint8_t colour, uint8_t red, uint8_t green, uint8_t blue)
+{
+    /*
+     
+     The red, green, and blue values coming in here are in the range of 0 - 255.
+     The values being sent to the LED can be in the range of 0 - 1023.
+     However the sum of the 3 values being sent to the LED can not exceed 1023.
+     Therefore, we want to scale up the values so that the LED is the brightest it can
+     be for any given colour, however at the same time not allowing the sum of the values
+     to go beyond the max limit.
+     
+     We cannot simply divide the excess value by 3 and delete that from each colour value 
+     as this could change the actual colour. The correct way to do this is as follows:
+     
+     1. Scale all 3 colour values to be in the range of 0 - 1023.
+     2. Work out the sum of all three scaled values.
+     3. If this is below/equal to 1023, use these values. If the sum is greater than 1023,
+        go to the next step.
+     4. Find the percentage of each of the values in the sum of the values.
+     5. Find the excess value (sum of values - 1023).
+     6. Find the value of each percentage found in step 4 applied to the excess value.
+     7. Decrease each value found in step 6 from the corresponding colours values.
+     8. The 3 values found in step 7 are the new colour values.
+     
+     */
     
+    //scale the values to the 0 - 1023 range
+    float red_scaled = (1023.0 * (float)red) / 255.0;
+    float green_scaled = (1023.0 * (float)green) / 255.0;
+    float blue_scaled = (1023.0 * (float)blue) / 255.0;
+    
+    //work out the sum of the values
+    float colours_sum = red_scaled + green_scaled + blue_scaled;
+    
+    if (colours_sum > 1023)
+    {
+        //get the percentages of the values against the total sum
+        float red_perc = red_scaled / colours_sum;
+        float green_perc = green_scaled / colours_sum;
+        float blue_perc = blue_scaled / colours_sum;
+        
+        //get the excess value
+        int excess_value = colours_sum - 1023;
+        
+        //apply the percentages to the excess value and decrease from the colour values
+        red_scaled = red_scaled - (excess_value * red_perc);
+        green_scaled = green_scaled - (excess_value * green_perc);
+        blue_scaled = blue_scaled - (excess_value * blue_perc);
+    }
+    
+    //set the new colour values
+    LED_Colour_Values [colour][0] = red_scaled;
+    LED_Colour_Values [colour][1] = green_scaled;
+    LED_Colour_Values [colour][2] = blue_scaled;
+}
+
 
 
 

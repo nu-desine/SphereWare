@@ -28,6 +28,9 @@ int LED_GreenCommand;
 // Variables for LED configuration
 uint8_t LED_Status, LED_Pressure_Status;
 
+// Colour values (min, mid, max)
+uint16_t LED_Colour_Values[3][3]; // [Colour number/type] [RGB]
+
 // Define number of ShiftBrite modules
 #define NUM_OF_LEDS 1
 
@@ -36,6 +39,8 @@ void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue);
 void LED_Set_Current(uint16_t red, uint16_t green, uint16_t blue);
 void LED_Set_Status(uint8_t status);
 void LED_Set_Pressure_Status(uint8_t);
+
+void LED_Set_Colour_Values (uint8_t colour, uint8_t red, uint8_t green, uint8_t blue);
 
 static void LED_SendPacket(void);
 static void LED_Latch(void);
