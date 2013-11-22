@@ -31,6 +31,9 @@ void LED_Init() {
     ENAPORT |= ~(1 << ENAPIN);
 
     LED_Status = LED_Pressure_Status = 1;
+    LED_Clock_Status = LED_Clock_Running = 0;
+    LED_Fade_Step = 100;
+    LED_Tempo = 120;
     LED_Set_Current(127, 127, 127); // << what does this do? is it still needed?
     
     //set default colours

@@ -26,7 +26,9 @@ int LED_RedCommand;
 int LED_GreenCommand;
 
 // Variables for LED configuration
-uint8_t LED_Status, LED_Pressure_Status;
+uint8_t LED_Status, LED_Pressure_Status; // << this should be a bool
+uint8_t LED_Clock_Status, LED_Clock_Running, LED_Fade_Step;
+uint16_t LED_Tempo;
 
 // Colour values (min, mid, max)
 uint16_t LED_Colour_Values[3][3]; // [Colour number/type] [RGB]

@@ -181,12 +181,11 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                     LED_Set_Pressure_Status (DataArray[messageIndex + 2]);
                 }
                 
-                // LED clock interaction
+                // clock interaction status
                 else if (DataArray[messageIndex + 1] == 0x03)
                 {
-                    //...
+                    LED_Clock_Status = (DataArray[messageIndex + 2]);
                 }
-                
             }
             
             //==== LED colour values ====
@@ -198,6 +197,23 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                 uint8_t blue = DataArray [messageIndex + 3];
                 
                 LED_Set_Colour_Values (colour, red, green, blue);
+            }
+            
+            //==== AlphaLive clock timing messages (for LED) ====
+            else if (DataArray[messageIndex] == 5)
+            {
+                if (DataArray[messageIndex + 1] == 0x00)
+                {
+                    LED_Clock_Running = 0;
+                }
+                else
+                {
+                    LED_Clock_Running = 1;
+                    LED_Fade_Step = 100;
+                }
+                
+                LED_Tempo = DataArray[messageIndex + 2] + DataArray[messageIndex + 3] << 8;
+                
             }
             
         }

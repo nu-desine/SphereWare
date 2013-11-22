@@ -190,7 +190,10 @@ void Delay(uint8_t pad)
         }
         else
         {
-            _delay_us(SETTLING_TIME);
+//            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+//                _delay_ms(1);
+//             else
+                 _delay_us(SETTLING_TIME);
         }
     } 
     else 
@@ -201,7 +204,10 @@ void Delay(uint8_t pad)
         }
         else
         {
-            _delay_us(SETTLING_TIME_OVER_39);
+//            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+//                _delay_ms(2);
+//            else
+                _delay_us(SETTLING_TIME_OVER_39);
         }
     }
 }
@@ -442,6 +448,10 @@ int main(void)
                 led_sum = 0;
             }
             
+            uint16_t red_new;
+            uint16_t green_new;
+            uint16_t blue_new;
+            
             if (led_sum <= 1023)
             {
                 if (prev_led_sum > 0)
@@ -450,17 +460,15 @@ int main(void)
                     int16_t green_dif = LED_Colour_Values[0][1] - LED_Colour_Values[1][1];
                     int16_t blue_dif = LED_Colour_Values[0][2] - LED_Colour_Values[1][2];
                     
-                    uint16_t red_new = LED_Colour_Values[0][0] - (led_sum * (red_dif / 1023.0));
-                    uint16_t green_new = LED_Colour_Values[0][1] - (led_sum * (green_dif / 1023.0));
-                    uint16_t blue_new = LED_Colour_Values[0][2] - (led_sum * (blue_dif / 1023.0));
-                    
-                    LED_Set_Colour(red_new, green_new, blue_new);
+                    red_new = LED_Colour_Values[0][0] - (led_sum * (red_dif / 1023.0));
+                    green_new = LED_Colour_Values[0][1] - (led_sum * (green_dif / 1023.0));
+                    blue_new = LED_Colour_Values[0][2] - (led_sum * (blue_dif / 1023.0));
                 }
                 else
                 {
-                    LED_Set_Colour(LED_Colour_Values[0][0],
-                                   LED_Colour_Values[0][1],
-                                   LED_Colour_Values[0][2]);
+                    red_new = LED_Colour_Values[0][0];
+                    green_new = LED_Colour_Values[0][1];
+                    blue_new = LED_Colour_Values[0][2];
                 }
                 
             }
@@ -477,13 +485,25 @@ int main(void)
                     int16_t green_dif = LED_Colour_Values[1][1] - LED_Colour_Values[2][1];
                     int16_t blue_dif = LED_Colour_Values[1][2] - LED_Colour_Values[2][2];
                     
-                    uint16_t red_new = LED_Colour_Values[1][0] - (led_sum * (red_dif / 1023.0));
-                    uint16_t green_new = LED_Colour_Values[1][1] - (led_sum * (green_dif / 1023.0));
-                    uint16_t blue_new = LED_Colour_Values[1][2] - (led_sum * (blue_dif / 1023.0));
-                    
-                    LED_Set_Colour(red_new, green_new, blue_new);
+                    red_new = LED_Colour_Values[1][0] - (led_sum * (red_dif / 1023.0));
+                    green_new = LED_Colour_Values[1][1] - (led_sum * (green_dif / 1023.0));
+                    blue_new = LED_Colour_Values[1][2] - (led_sum * (blue_dif / 1023.0));
                 }
             }
+            
+            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+            {
+                red_new *= (float)LED_Fade_Step/100.0;
+                green_new *= (float)LED_Fade_Step/100.0;
+                blue_new *= (float)LED_Fade_Step/100.0;
+                
+                LED_Fade_Step -= 5;
+                if (LED_Fade_Step <= 20)
+                    LED_Fade_Step == 20;
+            }
+            
+            //Set the LED colour here
+            LED_Set_Colour(red_new, green_new, blue_new);
         }
         
         prev_led_sum = led_sum;
