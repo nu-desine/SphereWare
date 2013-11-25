@@ -186,28 +186,28 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            _delay_ms(1);
+            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+                _delay_us(SETTLING_TIME);
+            else
+                _delay_ms(1);
         }
         else
         {
-//            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
-//                _delay_ms(1);
-//             else
-                 _delay_us(SETTLING_TIME);
+            _delay_us(SETTLING_TIME);
         }
     } 
     else 
     {
         if (tr)
         {
-            _delay_ms(2);
+            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+                _delay_us(SETTLING_TIME_OVER_39);
+            else
+                _delay_ms(2);
         }
         else
         {
-//            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
-//                _delay_ms(2);
-//            else
-                _delay_us(SETTLING_TIME_OVER_39);
+            _delay_us(SETTLING_TIME_OVER_39);
         }
     }
 }
