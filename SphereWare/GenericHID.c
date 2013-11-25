@@ -212,7 +212,7 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                     LED_Fade_Step = 100;
                 }
                 
-                LED_Tempo = DataArray[messageIndex + 2] + DataArray[messageIndex + 3] << 8;
+                LED_Tempo = DataArray[messageIndex + 2] + (DataArray[messageIndex + 3] << 8);
                 
             }
             
