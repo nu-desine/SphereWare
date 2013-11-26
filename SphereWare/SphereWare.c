@@ -170,6 +170,10 @@ ISR(TIMER1_COMPA_vect)
         //LED_Set_Current(127,127,127);
         count = 0;
     }
+    
+    //check for USB MIDI input
+    MIDI_Recieve_Usb_Midi();
+
 
     //service the USB interface, send the data over HID
     GenericHID_Task();
@@ -186,7 +190,7 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+            if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
                 _delay_us(SETTLING_TIME);
             else
                 _delay_ms(1);
@@ -200,7 +204,7 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+            if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
                 _delay_us(SETTLING_TIME_OVER_39);
             else
                 _delay_ms(2);
@@ -506,7 +510,7 @@ int main(void)
             
             
             //setting colour/brightness based on clock interaction...
-            if (LED_Clock_Status != 0 && LED_Clock_Running == 1)
+            if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
             {
                 cli();  //disable interrupts (as LED_Fade_Step is accessed from
                         //GenericHID_ProcessReport())

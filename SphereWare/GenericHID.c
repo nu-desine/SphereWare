@@ -202,17 +202,20 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
             //==== AlphaLive clock timing messages (for LED) ====
             else if (DataArray[messageIndex] == 5)
             {
-                if (DataArray[messageIndex + 1] == 0x00)
+                if (LED_Clock_Running != 2) //if it not currently synced to MIDI clock
                 {
-                    LED_Clock_Running = 0;
+                    if (DataArray[messageIndex + 1] == 0x00)
+                    {
+                        LED_Clock_Running = 0;
+                    }
+                    else
+                    {
+                        LED_Clock_Running = 1; //synced to AlphaLive's clock
+                        LED_Fade_Step = 100;
+                    }
+                    
+                    LED_Tempo = DataArray[messageIndex + 2] + (DataArray[messageIndex + 3] << 8);
                 }
-                else
-                {
-                    LED_Clock_Running = 1;
-                    LED_Fade_Step = 100;
-                }
-                
-                LED_Tempo = DataArray[messageIndex + 2] + (DataArray[messageIndex + 3] << 8);
                 
             }
             

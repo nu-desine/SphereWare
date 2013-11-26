@@ -17,12 +17,15 @@
 
 */
 #include "MIDI.h" 
+#include "LED.h"
 
 void MIDI_Init(void)
 {
 	UCSR1B |= (1 << TXEN1);
     UBRR1H = (BAUD_PRESCALE >> 8);  
     UBRR1L = BAUD_PRESCALE;
+    
+    timing_count = 0;
 }
 
 void MIDI_Send_Uart_Midi (uint8_t* DataArray)
@@ -67,6 +70,85 @@ void MIDI_Send_Usb_Midi (uint8_t* DataArray)
         // Send the data in the endpoint to the host
         Endpoint_ClearIN();
     }
+}
+
+void MIDI_Recieve_Usb_Midi()
+{
+    /* Select the MIDI OUT stream */
+    Endpoint_SelectEndpoint(MIDI_STREAM_OUT_EPADDR);
+    
+    /* Check if a MIDI command has been received */
+    if (Endpoint_IsOUTReceived())
+    {
+        MIDI_EventPacket_t MIDIEvent;
+        
+        /* Read the MIDI event packet from the endpoint */
+        Endpoint_Read_Stream_LE(&MIDIEvent, sizeof(MIDIEvent), NULL);
+        
+        uint8_t midiMessage[3];
+        
+        midiMessage[0] = MIDIEvent.Data1;
+        midiMessage[1] = MIDIEvent.Data2;
+        midiMessage[2] = MIDIEvent.Data3;
+        
+        MIDI_Process_Usb_Midi (midiMessage);
+        
+        /* If the endpoint is now empty, clear the bank */
+        if (!(Endpoint_BytesInEndpoint()))
+        {
+            /* Clear the endpoint ready for new packet */
+            Endpoint_ClearOUT();
+        }
+    }
+}
+
+void MIDI_Process_Usb_Midi (uint8_t* DataArray)
+{
+    uint8_t message[3];
+    message[0] = DataArray[0];
+    message[1] = DataArray[1];
+    message[2] = DataArray[2];
+    
+    //============================================
+    // Forward on message to HID IN report here...
+    
+    //============================================
+    // Process MIDI Clock messages...
+    
+    if (LED_Clock_Running != 1) //if it is not currently synced to AlphaLive's clock
+    {
+        //Start/Continue message
+        if (message[0] == 250 || message[0] == 251)
+        {
+            //set that clock is running...
+            LED_Clock_Running = 2; //synced to MIDI clock
+            LED_Fade_Step = 100;
+            
+            timing_count = 0;
+        }
+        //Stop message
+        else if (message[0] == 252)
+        {
+            //set that clock has stopped...
+            LED_Clock_Running = 0;
+        }
+        //Timing message
+        else if (message[0] == 248)
+        {
+            //control LED appropriately...
+            
+            timing_count++;
+            
+            if (timing_count >= 24)
+            {
+                LED_Fade_Step = 100;
+                
+                timing_count = 0;
+            }
+        }
+    }
+    
+    
 }
 
 void MIDI_Uart_Put (char s)
