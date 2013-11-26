@@ -110,7 +110,7 @@ void MIDI_Process_Usb_Midi (uint8_t* DataArray)
     message[2] = DataArray[2];
     
     //============================================
-    // Forward on message to HID IN report here...
+    // Forward on message to HID IN report and elite hardware port here...
     
     //============================================
     // Process MIDI Clock messages...
@@ -146,6 +146,38 @@ void MIDI_Process_Usb_Midi (uint8_t* DataArray)
                 timing_count = 0;
             }
         }
+    }
+    
+    //=========================================
+    // Process MIDI messages for LED colour control...
+    
+    // Channel 16 Control Change message
+    if (message[0] == 191)
+    {
+        // CC 20 - enable or disable static LED mode
+        if (message[1] == 20)
+        {
+            if (message[2] == 0)
+                LED_Mode = 0;
+            else
+                LED_Mode = 1;
+        }
+        // CC 21 - change red LED value
+        else if (message[1] == 21)
+        {
+            LED_Set_Static_Colour (0, message[2]);
+        }
+        // CC 22 - change green LED value
+        else if (message[1] == 22)
+        {
+            LED_Set_Static_Colour (1, message[2]);
+        }
+        // CC 23 - change blue LED value
+        else if (message[1] == 23)
+        {
+            LED_Set_Static_Colour (2, message[2]);
+        }
+
     }
     
     

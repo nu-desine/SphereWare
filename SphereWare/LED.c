@@ -31,10 +31,15 @@ void LED_Init() {
     ENAPORT |= ~(1 << ENAPIN);
 
     LED_Status = LED_Pressure_Status = 1;
-    LED_Clock_Status = LED_Clock_Running = 0;
+    LED_Mode = LED_Clock_Status = LED_Clock_Running = 0;
     LED_Fade_Step = 100;
     LED_Tempo = 120;
     LED_Set_Current(127, 127, 127); // << what does this do? is it still needed?
+    
+    for (int i = 0; i < 3; i ++)
+    {
+        LED_Static_Colour_Values[i] = 0;
+    }
     
     //set default colours
     LED_Set_Colour_Values (0, 0, 0, 255);
@@ -165,15 +170,18 @@ void LED_Set_Status(uint8_t status)
 {
     LED_Status = status;
     
-    if (status == 0)
+    if (LED_Mode == 0)
     {
-        LED_Set_Colour(0, 0, 0);
-    }
-    else
-    {
-        LED_Set_Colour(LED_Colour_Values[0][0],
-                       LED_Colour_Values[0][1],
-                       LED_Colour_Values[0][2]);
+        if (status == 0)
+        {
+            LED_Set_Colour(0, 0, 0);
+        }
+        else
+        {
+            LED_Set_Colour(LED_Colour_Values[0][0],
+                           LED_Colour_Values[0][1],
+                           LED_Colour_Values[0][2]);
+        }
     }
 }
 
@@ -181,11 +189,15 @@ void LED_Set_Pressure_Status(uint8_t status)
 {
     LED_Pressure_Status = status;
     
-    if (status == 0 && LED_Status == 1)
+    
+    if (LED_Mode == 0)
     {
-        LED_Set_Colour(LED_Colour_Values[0][0],
-                       LED_Colour_Values[0][1],
-                       LED_Colour_Values[0][2]);
+        if (status == 0 && LED_Status == 1)
+        {
+            LED_Set_Colour(LED_Colour_Values[0][0],
+                           LED_Colour_Values[0][1],
+                           LED_Colour_Values[0][2]);
+        }
     }
 }
 
@@ -243,6 +255,53 @@ void LED_Set_Colour_Values (uint8_t colour, uint8_t red, uint8_t green, uint8_t 
     LED_Colour_Values [colour][0] = red_scaled;
     LED_Colour_Values [colour][1] = green_scaled;
     LED_Colour_Values [colour][2] = blue_scaled;
+}
+
+void LED_Set_Static_Colour (uint8_t colour, uint8_t colour_value)
+{
+    //see the above function for a description of this scaling algorithm...
+    
+    //get the current static colour vales
+    float red_scaled = LED_Static_Colour_Values[0];
+    float green_scaled = LED_Static_Colour_Values[1];
+    float blue_scaled = LED_Static_Colour_Values[2];
+    
+    //scale the changed value to the 0 - 1023 range
+    if (colour == 0)
+        red_scaled = (1023.0 * (float)colour_value) / 127.0;
+    else if(colour == 1)
+        green_scaled = (1023.0 * (float)colour_value) / 127.0;
+    else if (colour = 2)
+        blue_scaled = (1023.0 * (float)colour_value) / 127.0;
+    
+    //work out the sum of the values
+    float colours_sum = red_scaled + green_scaled + blue_scaled;
+    
+    if (colours_sum > 1023)
+    {
+        //get the percentages of the values against the total sum
+        float red_perc = red_scaled / colours_sum;
+        float green_perc = green_scaled / colours_sum;
+        float blue_perc = blue_scaled / colours_sum;
+        
+        //get the excess value
+        int excess_value = colours_sum - 1023;
+        
+        //apply the percentages to the excess value and decrease from the colour values
+        red_scaled = red_scaled - (excess_value * red_perc);
+        green_scaled = green_scaled - (excess_value * green_perc);
+        blue_scaled = blue_scaled - (excess_value * blue_perc);
+    }
+    
+    //set the new colour
+    LED_Static_Colour_Values[0] = red_scaled;
+    LED_Static_Colour_Values[1] = green_scaled;
+    LED_Static_Colour_Values[2] = blue_scaled;
+    
+    //Initially I tried changing the colour of the LED here as soon as
+    //a value was received from the MIDI input. However this caused weird
+    //errors with the firmware->software comms. Therefore now the actual
+    //LED is changed colour in the programs main loop in SphereWare.
 }
 
 
