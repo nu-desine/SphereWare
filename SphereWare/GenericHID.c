@@ -186,6 +186,12 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                 {
                     LED_Clock_Status = (DataArray[messageIndex + 2]);
                 }
+                
+                // mode
+                else if (DataArray[messageIndex + 1] == 0x04)
+                {
+                    LED_Mode= (DataArray[messageIndex + 2]);
+                }
             }
             
             //==== LED colour values ====
