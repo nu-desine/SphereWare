@@ -190,7 +190,7 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                 // mode
                 else if (DataArray[messageIndex + 1] == 0x04)
                 {
-                    LED_Mode= (DataArray[messageIndex + 2]);
+                    LED_Mode = (DataArray[messageIndex + 2]);
                 }
             }
             
