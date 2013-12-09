@@ -110,7 +110,9 @@ void MIDI_Process_Usb_Midi (uint8_t* DataArray)
     message[2] = DataArray[2];
     
     //============================================
-    // Forward on message to HID IN report and elite hardware port here...
+    // Forward on message to HID IN report (and elite hardware port?) here...
+    
+    GenericHID_Write_MidiData (DataArray);
     
     //============================================
     // Process MIDI Clock messages...

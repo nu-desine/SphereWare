@@ -243,7 +243,7 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
 
 }
 
-void GenericHID_ProcessMidiMessage (uint8_t* DataArray)
+void GenericHID_Write_MidiData(uint8_t* DataArray)
 {
     //Here, we add the number of queued MIDI messages to send
     //in hid_in_buffer[100], with the message data added to
