@@ -174,11 +174,10 @@ ISR(TIMER1_COMPA_vect)
     //check for USB MIDI input
     MIDI_Recieve_Usb_Midi();
 
-
     //service the USB interface, send the data over HID
     GenericHID_Task();
     USB_USBTask();
-} 
+}
 
 
 void Delay(uint8_t pad)
