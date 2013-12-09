@@ -19,19 +19,6 @@
 #include "LED.h"
 #include <avr/interrupt.h>
 
-volatile bool led_user_mode = false;
-int led_channels[NUM_OF_LEDS][3];
-
-void LED_Set_UserMode(bool mode)
-{
-    led_user_mode = mode;
-}
-
-bool LED_Get_UserMode(void)
-{
-    return led_user_mode;
-}
-
 uint16_t setting[3];
 // Set pins to outputs and initial states
 void LED_Init() {
@@ -155,19 +142,15 @@ void LED_TestLoop(void) {
 
 void LED_Set_Colour(uint16_t red, uint16_t green, uint16_t blue)
 {
+    int led_channels[NUM_OF_LEDS][3];
     for (int i = 0; i < NUM_OF_LEDS; i++) 
     {
         led_channels[i][0] = red;
         led_channels[i][1] = green;
         led_channels[i][2] = blue;
     }
-}
-
-void LED_Send(void)
-{
     LED_WriteArray(led_channels);
 }
-
     
 
 

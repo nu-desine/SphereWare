@@ -3,7 +3,6 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
-#include <stdbool.h>
 
 // Defines for direct port access
 #define CLKPORT PORTC
@@ -39,10 +38,5 @@ static void LED_WriteArray(int led_channels[NUM_OF_LEDS][3]);
 
 // Example loop to cycle all LEDs through primary colors
 void LED_TestLoop(void);
-
-void LED_Set_UserMode(bool mode);
-bool LED_Get_UserMode(void);
-
-void LED_Send(void);
 
 #endif// __BRITE_H__ 

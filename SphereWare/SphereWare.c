@@ -173,7 +173,6 @@ ISR(TIMER1_COMPA_vect)
 
     //service the USB interface, send the data over HID
     GenericHID_Task();
-    LED_Send();
     USB_USBTask();
 } 
 
@@ -409,31 +408,27 @@ int main(void)
                 }
             }
         }
-        cli();
-        bool lum = LED_Get_UserMode();
         //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
-        if (!lum)
+
+        if (led_sum > 0)
+            led_sum = (led_sum << 1) | 1;
+        else
+            led_sum = 0;
+
+        if (led_sum <= 1023)
         {
-            if (led_sum > 0)
-                led_sum = (led_sum << 1) | 1;
-            else
-                led_sum = 0;
-
-            if (led_sum <= 1023)
-            {
-                LED_Set_Colour(0, led_sum, (1023 - led_sum));
-            }
-            else  
-            {
-                led_sum -= 1022;
-
-                if (led_sum > 1023)
-                    led_sum = 1023;
-
-                LED_Set_Colour(led_sum, (1023 - led_sum), 0);
-            }
+            LED_Set_Colour(0, led_sum, (1023 - led_sum));
         }
-        sei();
+        else  
+        {
+            led_sum -= 1022;
+
+            if (led_sum > 1023)
+                led_sum = 1023;
+
+            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+        }
+
 
     }
 }
