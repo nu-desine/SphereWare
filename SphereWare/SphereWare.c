@@ -170,6 +170,10 @@ ISR(TIMER1_COMPA_vect)
         //LED_Set_Current(127,127,127);
         count = 0;
     }
+    
+    //check for USB MIDI input
+    MIDI_Recieve_Usb_Midi();
+
 
     //service the USB interface, send the data over HID
     GenericHID_Task();
@@ -186,7 +190,10 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            _delay_ms(1);
+            if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
+                _delay_us(SETTLING_TIME);
+            else
+                _delay_ms(1);
         }
         else
         {
@@ -197,7 +204,10 @@ void Delay(uint8_t pad)
     {
         if (tr)
         {
-            _delay_ms(2);
+            if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
+                _delay_us(SETTLING_TIME_OVER_39);
+            else
+                _delay_ms(2);
         }
         else
         {
@@ -212,6 +222,8 @@ void Delay(uint8_t pad)
 int main(void)
 {
 
+    uint16_t prev_led_sum = 0;
+    
     uint16_t sticky_count[LAST_PAD+1];
     memset(sticky_count, 0, sizeof(uint16_t) * (LAST_PAD+1));
 
@@ -241,8 +253,15 @@ int main(void)
             if (!bit_is_set(PINE, PE2))
             {
                 being_played[LAST_PAD+6] = true;
-                // turn LED blue
-                LED_Set_Colour(0,0,1023);
+                
+//                if (LED_Status != 0)
+//                {
+//                    // set min colour
+//                    LED_Set_Colour(LED_Colour_Values[0][0],
+//                                   LED_Colour_Values[0][1],
+//                                   LED_Colour_Values[0][2]);
+//                }
+                
                 cli(); //disable interrupts
                 thresholds_raised = false;
                 Calibrate();
@@ -408,28 +427,140 @@ int main(void)
                 }
             }
         }
-        //fade the led blue->green for 0-511 and green->red for 511-1023 total pressure
-
-        if (led_sum > 0)
-            led_sum = (led_sum << 1) | 1;
-        else
-            led_sum = 0;
-
-        if (led_sum <= 1023)
+        
+        //=================================================================================
+        //Setting the LED colour...
+        //=================================================================================
+        
+        if (LED_Mode == 0) //normal mode
         {
-            LED_Set_Colour(0, led_sum, (1023 - led_sum));
+            if (LED_Status != 0)
+            {
+                uint16_t red_new, green_new, blue_new;
+                
+                //setting colour based on pressure input...
+                if (LED_Pressure_Status != 0)
+                {
+                    /*
+                     Fade the led between min colour and mid colour for 0-511 pressure range,
+                     and mid colour to max colour for 511-1023 pressure range.
+                     
+                     To do this you need to do the following for each of the two pressure ranges:
+                     1. Work out the difference between each colour value (e.g. min red - mid red)
+                     2. Get the percentage of the difference value against 511.
+                     3. Mutiple the current pressure value by this percentage.
+                     4. Add this value to the base led colour value.
+                     
+                     */
+                    
+                    
+                    if (led_sum > 0)
+                    {
+                        led_sum = (led_sum << 1) | 1;
+                    }
+                    else
+                    {
+                        led_sum = 0;
+                    }
+                    
+                    
+                    if (led_sum <= 1023)
+                    {
+                        if (prev_led_sum > 0)
+                        {
+                            int16_t red_dif = LED_Colour_Values[0][0] - LED_Colour_Values[1][0];
+                            int16_t green_dif = LED_Colour_Values[0][1] - LED_Colour_Values[1][1];
+                            int16_t blue_dif = LED_Colour_Values[0][2] - LED_Colour_Values[1][2];
+                            
+                            red_new = LED_Colour_Values[0][0] - (led_sum * (red_dif / 1023.0));
+                            green_new = LED_Colour_Values[0][1] - (led_sum * (green_dif / 1023.0));
+                            blue_new = LED_Colour_Values[0][2] - (led_sum * (blue_dif / 1023.0));
+                        }
+                        else
+                        {
+                            red_new = LED_Colour_Values[0][0];
+                            green_new = LED_Colour_Values[0][1];
+                            blue_new = LED_Colour_Values[0][2];
+                        }
+                        
+                    }
+                    else
+                    {
+                        led_sum -= 1022;
+                        
+                        if (led_sum > 1023)
+                            led_sum = 1023;
+                        
+                        if (prev_led_sum > 0)
+                        {
+                            int16_t red_dif = LED_Colour_Values[1][0] - LED_Colour_Values[2][0];
+                            int16_t green_dif = LED_Colour_Values[1][1] - LED_Colour_Values[2][1];
+                            int16_t blue_dif = LED_Colour_Values[1][2] - LED_Colour_Values[2][2];
+                            
+                            red_new = LED_Colour_Values[1][0] - (led_sum * (red_dif / 1023.0));
+                            green_new = LED_Colour_Values[1][1] - (led_sum * (green_dif / 1023.0));
+                            blue_new = LED_Colour_Values[1][2] - (led_sum * (blue_dif / 1023.0));
+                        }
+                    }
+                }
+                else
+                {
+                    red_new = LED_Colour_Values[0][0];
+                    green_new = LED_Colour_Values[0][1];
+                    blue_new = LED_Colour_Values[0][2];
+                }
+                
+                
+                //setting colour/brightness based on clock interaction...
+                if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
+                {
+                    cli();  //disable interrupts (as LED_Fade_Step is accessed from
+                    //GenericHID_ProcessReport())
+                    
+                    if (LED_Fade_Step > 0)
+                    {
+                        red_new *= (float)LED_Fade_Step / 100.0;
+                        green_new *= (float)LED_Fade_Step / 100.0;
+                        blue_new *= (float)LED_Fade_Step / 100.0;
+                    }
+                    else
+                    {
+                        red_new = green_new = blue_new = 0;
+                    }
+                    
+                    //This controls how fast the LEDs fade, controlled by the tempo.
+                    //Currently not using an algorithm uses the exact beat interval
+                    //as well - this would be better though.
+                    LED_Fade_Step -= LED_Tempo / 25.0;
+                    
+                    sei(); //enable interrrupts
+                    
+                }
+                
+                
+                //Set the LED colour here...
+                LED_Set_Colour(red_new, green_new, blue_new);
+            }
         }
-        else  
+        else if (LED_Mode == 1)
         {
-            led_sum -= 1022;
-
-            if (led_sum > 1023)
-                led_sum = 1023;
-
-            LED_Set_Colour(led_sum, (1023 - led_sum), 0);
+            cli();  //disable interrupts
+            
+            //Set the LED colour...
+            LED_Set_Colour(LED_Static_Colour_Values[0],
+                           LED_Static_Colour_Values[1],
+                           LED_Static_Colour_Values[2]);
+            
+            sei(); //enable interrrupts
+            
+            //Initially I tried changing the colour of the LED within LED.c soon as
+            //a value was received from the MIDI input. However this caused weird
+            //errors with the firmware->software comms. Therefore now the actual
+            //LED is changed colour here in the programs main loop.
         }
-
-
+        
+        prev_led_sum = led_sum;
+        
     }
 }
 

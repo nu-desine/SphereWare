@@ -18,6 +18,7 @@
     */
 #include "GenericHID.h"
 #include "MIDI.h"
+#include "LED.h"
 
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 
@@ -164,7 +165,66 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                 MIDI_Send_Usb_Midi (message);
                 MIDI_Send_Uart_Midi (message);
             }
-
+            
+            //==== General LED Settings ====
+            else if (DataArray[messageIndex] == 1)
+            {
+                // on/off status
+                if (DataArray[messageIndex + 1] == 0x01)
+                {
+                    LED_Set_Status (DataArray[messageIndex + 2]);
+                }
+                
+                // pressure interaction status
+                else if (DataArray[messageIndex + 1] == 0x02)
+                {
+                    LED_Set_Pressure_Status (DataArray[messageIndex + 2]);
+                }
+                
+                // clock interaction status
+                else if (DataArray[messageIndex + 1] == 0x03)
+                {
+                    LED_Clock_Status = (DataArray[messageIndex + 2]);
+                }
+                
+                // mode
+                else if (DataArray[messageIndex + 1] == 0x04)
+                {
+                    LED_Mode = (DataArray[messageIndex + 2]);
+                }
+            }
+            
+            //==== LED colour values ====
+            else if (DataArray[messageIndex] >= 2 && DataArray[messageIndex] <= 4)
+            {
+                uint8_t colour = DataArray[messageIndex] - 2;
+                uint8_t red = DataArray[messageIndex + 1];
+                uint8_t green = DataArray[messageIndex + 2];
+                uint8_t blue = DataArray [messageIndex + 3];
+                
+                LED_Set_Colour_Values (colour, red, green, blue);
+            }
+            
+            //==== AlphaLive clock timing messages (for LED) ====
+            else if (DataArray[messageIndex] == 5)
+            {
+                if (LED_Clock_Running != 2) //if it not currently synced to MIDI clock
+                {
+                    if (DataArray[messageIndex + 1] == 0x00)
+                    {
+                        LED_Clock_Running = 0;
+                    }
+                    else
+                    {
+                        LED_Clock_Running = 1; //synced to AlphaLive's clock
+                        LED_Fade_Step = 100;
+                    }
+                    
+                    LED_Tempo = DataArray[messageIndex + 2] + (DataArray[messageIndex + 3] << 8);
+                }
+                
+            }
+            
         }
 
     }

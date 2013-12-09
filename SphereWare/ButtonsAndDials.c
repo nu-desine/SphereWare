@@ -85,18 +85,21 @@ static void Encoder_Read(uint8_t number, bool * being_turned)
     static uint8_t dial_state[2] = {0, 0};
     uint8_t pins = PIND;
     pins = ((pins >> PD6) & 1) << 1 | ((pins >> number) & 1);
-    dial_state[number] = ((dial_state[number] << 2) | pins);
-    switch (dial_state[number])
+    if (pins != (dial_state[number] & 0b11))
     {
-        case 0b11111101:
-            GenericHID_Adjust_Dial(number, -1);
-            *being_turned = true;
-            break;
-        case 0b11111110:
-            GenericHID_Adjust_Dial(number, 1);
-            *being_turned = true;
-            break;
-        default:
-            *being_turned = false;
+        dial_state[number] = ((dial_state[number] << 2) | pins);
+        switch (dial_state[number] & 0b111111)
+        {
+            case 0b110100:
+                GenericHID_Adjust_Dial(number, -1);
+                *being_turned = true;
+                break;
+            case 0b111000:
+                GenericHID_Adjust_Dial(number, 1);
+                *being_turned = true;
+                break;
+            default:
+                *being_turned = false;
+        }
     }
 }

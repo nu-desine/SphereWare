@@ -27,6 +27,8 @@
 #define USART_BAUDRATE 31250 
 #define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
 
+uint8_t timing_count;
+
 //==============================================================================
 /** MIDI initialisation function.
  
@@ -47,6 +49,18 @@ void MIDI_Send_Uart_Midi (uint8_t* DataArray);
  @param DataArray        the array of data that needs to be sent as a USB MIDI message
  */
 void MIDI_Send_Usb_Midi (uint8_t* DataArray);
+
+//==============================================================================
+/** Checks to see if MIDI message has been receive on the USB MIDI input.
+ */
+void MIDI_Recieve_Usb_Midi();
+
+//==============================================================================
+/** Processes a MIDI message recieved on the USB MIDI input.
+ 
+ @param DataArray        the MIDI message
+ */
+void MIDI_Process_Usb_Midi (uint8_t* DataArray);
 
 void MIDI_Uart_Put (char s);
 
