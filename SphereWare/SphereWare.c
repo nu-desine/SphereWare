@@ -514,7 +514,16 @@ int main(void)
                 if (LED_Clock_Status != 0 && LED_Clock_Running != 0)
                 {
                     cli();  //disable interrupts (as LED_Fade_Step is accessed from
-                    //GenericHID_ProcessReport())
+                    //GenericHID_ProcessReport() and MIDI_Process_Usb_Midi() )
+                    
+                    //Here we use the LED_Fade_Step variable to determine the current brightness
+                    //of each LED to create a fade-out. Currently we use two different methods
+                    //to set/change the value of LED_Fade_Step based on whether we are currently
+                    //synced to AlphaLive's clock or a MIDI clock. It would be good to eventually
+                    //consolidate this into a single method of setting LED_Fade_Step, by either
+                    //programming AlphaLive to send 24 timing messages per beat like MIDI Clock,
+                    //or working out the tempo of a MIDI Clock based on the timestamps of timing
+                    //messages.
                     
                     if (LED_Fade_Step > 0)
                     {
@@ -527,10 +536,24 @@ int main(void)
                         red_new = green_new = blue_new = 0;
                     }
                     
-                    //This controls how fast the LEDs fade, controlled by the tempo.
-                    //Currently not using an algorithm uses the exact beat interval
-                    //as well - this would be better though.
-                    LED_Fade_Step -= LED_Tempo / 25.0;
+                    //Set the value of LED_Fade_Step...
+                    
+                    if (LED_Clock_Running == 1) //Synced to AlphaLive's clikc
+                    {
+                        //Here we decremented LED_Fade_Step by a value based on LED_Tempo which is set by a HID message.
+                        //LED_Fade_Step is reset back to 100 everytime we receive a new timing message from AlphaLive,
+                        //which in this case is on every beat.
+                        LED_Fade_Step -= LED_Tempo / 25.0; //is 25 the right value here?
+                    }
+                    
+                    if (LED_Clock_Running == 2) //Synced to MIDI clock
+                    {
+                        //Here we set LED_Fade_Step based on the current value of MIDI_Clock_Timing_Count.
+                        //MIDI_Clock_Timing_Count will be in the range of 0-23, and is incremented or reset to 0
+                        //each time a new MIDI clock message is recieved. There will be 24 timing messages
+                        //for each beat.
+                        LED_Fade_Step = 100 - (MIDI_Clock_Timing_Count * 4.5); //is 4.5 the right value here?
+                    }
                     
                     sei(); //enable interrrupts
                     

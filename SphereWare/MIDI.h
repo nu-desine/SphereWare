@@ -27,7 +27,7 @@
 #define USART_BAUDRATE 31250 
 #define BAUD_PRESCALE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
 
-uint8_t timing_count;
+uint8_t MIDI_Clock_Timing_Count;
 
 //==============================================================================
 /** MIDI initialisation function.

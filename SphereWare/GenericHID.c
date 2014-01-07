@@ -220,6 +220,9 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
             //==== AlphaLive clock timing messages (for LED) ====
             else if (DataArray[messageIndex] == 5)
             {
+                //Timing messages are recieved from AlphaLive on each beat, as opposed to
+                //MIDI Clock timing messages that are sent every 1/24 of a beat.
+                
                 if (LED_Clock_Running != 2) //if it not currently synced to MIDI clock
                 {
                     if (DataArray[messageIndex + 1] == 0x00)
@@ -229,7 +232,7 @@ void GenericHID_ProcessReport(uint8_t* DataArray)
                     else
                     {
                         LED_Clock_Running = 1; //synced to AlphaLive's clock
-                        LED_Fade_Step = 100;
+                        LED_Fade_Step = 100; //set the LED to full brightness to start a new fade
                     }
                     
                     LED_Tempo = DataArray[messageIndex + 2] + (DataArray[messageIndex + 3] << 8);

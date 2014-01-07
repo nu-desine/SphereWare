@@ -25,7 +25,7 @@ void MIDI_Init(void)
     UBRR1H = (BAUD_PRESCALE >> 8);  
     UBRR1L = BAUD_PRESCALE;
     
-    timing_count = 0;
+    MIDI_Clock_Timing_Count = 0;
 }
 
 void MIDI_Send_Uart_Midi (uint8_t* DataArray)
@@ -126,7 +126,7 @@ void MIDI_Process_Usb_Midi (uint8_t* DataArray)
             LED_Clock_Running = 2; //synced to MIDI clock
             LED_Fade_Step = 100;
             
-            timing_count = 0;
+            MIDI_Clock_Timing_Count = 0;
         }
         //Stop message
         else if (message[0] == 252)
@@ -137,15 +137,18 @@ void MIDI_Process_Usb_Midi (uint8_t* DataArray)
         //Timing message
         else if (message[0] == 248)
         {
+            //Timing messages are recieved from a MIDI clock 24 times per beat,
+            //as opposed to AlphaLive timing messages that are sent once per beat.
+            
             //control LED appropriately...
             
-            timing_count++;
+            MIDI_Clock_Timing_Count++;
             
-            if (timing_count >= 24)
+            if (MIDI_Clock_Timing_Count >= 24)
             {
                 LED_Fade_Step = 100;
                 
-                timing_count = 0;
+                MIDI_Clock_Timing_Count = 0;
             }
         }
     }
