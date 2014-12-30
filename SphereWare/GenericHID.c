@@ -24,12 +24,12 @@ volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 uint8_t noOfMidiInMessages = 0;
 
 //quick patch for AlphaSphere me, 0xFF for non-existent pads
-uint8_t me_pad_tranform[48] = { 0xFF,  0xFF,  0xFF,  0xFF,     6,     7,     0,     1,
-                                   2,     3,     4,     5,    15,     8,     9,    10,
-                                  11,    12,    13,    14,  0xFF,  0xFF,  0xFF,  0xFF,
-                                  24,    25,    26,    27,    17,    18,    19,    20,
-                                  21,    22,    23,    16,    26,    27,    28,    29,
-                                  30,    31,    24,    25,  0xFF,  0xFF,  0xFF,  0xFF };
+uint8_t me_pad_tranform[48] = { 0xFF,  0xFF,  0xFF,  0xFF,     0,     1,     2,     3,
+                                   4,     5,     6,     7,     9,    10,    11,    12,
+                                  13,    14,    15,     8,  0xFF,  0xFF,  0xFF,  0xFF,
+                                0xFF,  0xFF,  0xFF,  0xFF,    19,    20,    21,    22,
+                                  23,    16,    17,    18,    28,    29,    30,    31,
+                                  24,    25,    26,    27,  0xFF,  0xFF,  0xFF,  0xFF };
 
 void GenericHID_Task(void)
 {
