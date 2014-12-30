@@ -23,6 +23,14 @@
 volatile uint8_t hid_in_buffer[GENERIC_REPORT_SIZE] = {1};
 uint8_t noOfMidiInMessages = 0;
 
+//quick patch for AlphaSphere me, 0xFF for non-existent pads
+uint8_t me_pad_tranform[48] = { 0xFF,  0xFF,  0xFF,  0xFF,     6,     7,     0,     1,
+                                   2,     3,     4,     5,    15,     8,     9,    10,
+                                  11,    12,    13,    14,  0xFF,  0xFF,  0xFF,  0xFF,
+                                  24,    25,    26,    27,    17,    18,    19,    20,
+                                  21,    22,    23,    16,    26,    27,    28,    29,
+                                  30,    31,    24,    25,  0xFF,  0xFF,  0xFF,  0xFF };
+
 void GenericHID_Task(void)
 {
     static bool flip = 0;
@@ -95,25 +103,35 @@ void GenericHID_Task(void)
 
 void GenericHID_Write_PadData (uint8_t pad_number, int16_t pad_value, uint8_t pad_velocity)
 {
-
+    pad_number = me_pad_tranform[pad_number];
+    if (pad_number < 32)
+    {
     hid_in_buffer[1 + (pad_number * 2)] = pad_velocity & 0x7F | ((pad_value & 1) << 7);
     hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 1;
+    }
 
 }
 
 void GenericHID_Write_PressureOnly (uint8_t pad_number, int16_t pad_value)
 {
-
+    pad_number = me_pad_tranform[pad_number];
+    if (pad_number < 32)
+    {
     hid_in_buffer[1 + (pad_number * 2)] &= 0x7F;
     hid_in_buffer[1 + (pad_number * 2)] |= ((pad_value & 1) << 7);
     hid_in_buffer[2 + (pad_number * 2)]  = pad_value >> 1;
 }
+}
 
 void GenericHID_Write_DebugData (uint8_t pad_number, int16_t pad_value)
 {
+    pad_number = me_pad_tranform[pad_number];
+    if (pad_number < 32)
+    {
     hid_in_buffer[0] = 0x02;
     hid_in_buffer[1 + (pad_number * 2)] = pad_value & 0xFF;
     hid_in_buffer[2 + (pad_number * 2)] = pad_value >> 8;
+}
 }
 
 void GenericHID_Write_ButtonData(uint8_t buttons) 

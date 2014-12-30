@@ -286,7 +286,6 @@ int main(void)
             if (pad < 40) 
             { 
                 int16_t val = -ADC_Read(DIFF_1_X10, ADC4) - init_val[pad];
-                //GenericHID_Write_PadData(pad, r2r_val[i], i);
 
                 if (val > 0)
                 {
